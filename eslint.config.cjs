@@ -1,9 +1,13 @@
-import js from '@eslint/js'
-import tsPlugin from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
-import importPlugin from 'eslint-plugin-import'
+const { createRequire } = require('node:module');
+const path = require('node:path');
+const requireServer = createRequire(path.resolve(__dirname, 'server/package.json'));
 
-export default [
+const js = requireServer('@eslint/js');
+const tsPlugin = requireServer('@typescript-eslint/eslint-plugin');
+const tsParser = requireServer('@typescript-eslint/parser');
+const importPlugin = requireServer('eslint-plugin-import');
+
+module.exports = [
   js.configs.recommended,
   {
     files: ['**/*.{js,ts}'],
