@@ -10,7 +10,6 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "rootDir": "src",
     "outDir": "dist",
     "types": [
       "node",
