@@ -1,11 +1,13 @@
 import cors from "cors"
 import dotenv from "dotenv"
 import express from "express"
+import { Request, Response, NextFunction } from "express"
 import rateLimit from "express-rate-limit"
 import helmet from "helmet"
 import morgan from "morgan"
 import path, { dirname } from "path"
 import { fileURLToPath } from "url"
+
 import errorHandler from "./src/middleware/errorHandler.js"
 import adminRoutes from "./src/routes/adminRoutes.js"
 import artTermsRoutes from "./src/routes/artTermsRoutes.js"
@@ -17,6 +19,7 @@ import postRoutes from "./src/routes/postRoutes.js"
 import productRoutes from "./src/routes/productRoutes.js"
 import searchRoutes from "./src/routes/searchRoutes.js"
 import userRoutes from "./src/routes/userRoutes.js"
+
 dotenv.config()
 
 const app = express()
@@ -35,21 +38,19 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'unsafe-inline'", "'self'"],
-        //styleSrc: ["''"],
         imgSrc: [
           "'self'",
           "data:",
           "blob:",
           "https://*.tile.openstreetmap.org",
-        ], // Added 'blob:' here
+        ],
         connectSrc: ["'self'"],
-        //fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
       },
     },
-  }),
+  })
 )
 
 // CORS Configuration
@@ -57,13 +58,13 @@ app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
-  }),
+  })
 )
 
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 0.2 * 60 * 1000, // 2 sec
-  max: 10000, // limit each IP to 100 requests per windowMs
+  max: 10000,
   message: "Too many requests from this IP, please try again later.",
 })
 app.use(limiter)
@@ -74,9 +75,15 @@ app.use(morgan("combined"))
 // Middleware to parse JSON
 app.use(express.json())
 
+// ✅ Type-safe middleware for request logging
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[${req.method}] ${req.url}`)
+  next()
+})
+
 // Enforce HTTPS
 if (process.env.NODE_ENV === "production") {
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.secure || req.headers["x-forwarded-proto"] === "https") {
       next()
     } else {
@@ -84,7 +91,6 @@ if (process.env.NODE_ENV === "production") {
     }
   })
 }
-
 
 // API Routes
 app.use("/api/auth", authRoutes)
@@ -107,3 +113,4 @@ console.log("Client URL", process.env.CLIENT_URL)
 app.use(errorHandler)
 
 export default app
+

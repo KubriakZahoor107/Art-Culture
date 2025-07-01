@@ -10,12 +10,16 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node", "jest"]
+    "outDir": "dist",
+    "types": [
+      "node",
+      "jest"
+    ]
   },
   "include": [
-    "src/**/*",
-    "*.js",
-    "tests/**/*.js"
+    "src/**/*.{ts,js}",
+    "tests/**/*.{ts,js}",
+    "*.js"
   ],
   "ts-node": {
     "esm": true

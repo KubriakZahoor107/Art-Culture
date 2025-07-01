@@ -13,22 +13,22 @@ const PORT = process.env.PORT || 5000 // Use a port that doesn't conflict with y
 
 // Start the server and connect to the database
 async function startServer() {
-        try {
-                // Connect to the database
+	try {
+		// Connect to the database
                 await prisma.$connect()
                 logger.info('Connected to the database successfully.')
 
-                // Start listening for incoming requests
+		// Start listening for incoming requests
                 app.listen(PORT, () => {
                         logger.info(
                                 `Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`
                         )
                 })
-        } catch (error) {
+	} catch (error) {
                 logger.error('Error starting the server:', error)
                 await prisma.$disconnect()
                 process.exit(1)
-        }
+	}
 }
 
 startServer()
