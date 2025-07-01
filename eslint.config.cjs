@@ -1,11 +1,13 @@
 const { createRequire } = require('module')
 const path = require('path')
+
 const requireServer = createRequire(path.join(__dirname, 'server', 'package.json'))
 
 const js = requireServer('@eslint/js')
 const tsPlugin = requireServer('@typescript-eslint/eslint-plugin')
 const tsParser = requireServer('@typescript-eslint/parser')
 const importPlugin = requireServer('eslint-plugin-import')
+const globals = requireServer('globals')
 
 module.exports = [
   js.configs.recommended,
@@ -17,16 +19,8 @@ module.exports = [
       ecmaVersion: 2023,
       sourceType: 'module',
       globals: {
-        ...js.environments.node.globals,
-        describe: 'readonly',
-        it: 'readonly',
-        test: 'readonly',
-        expect: 'readonly',
-        jest: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
+        ...globals.node,
+        ...globals.jest,
       },
     },
     plugins: {
