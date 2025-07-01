@@ -16,6 +16,18 @@ module.exports = [
       parser: tsParser,
       ecmaVersion: 2023,
       sourceType: 'module',
+      globals: {
+        ...js.environments.node.globals,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        jest: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
