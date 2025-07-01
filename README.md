@@ -1,6 +1,6 @@
 # Art & Culture Backend
 
-This repository contains an Express API server that uses Prisma for database access. The codebase targets **Node.js 18**.
+This repository contains an Express API server that uses Prisma for database access. The codebase targets **Node.js 20**.
 Portions of the backend are gradually being migrated to **TypeScript** for improved type safety.
 
 ## Setup
