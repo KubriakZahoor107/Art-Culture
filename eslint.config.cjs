@@ -1,7 +1,11 @@
-const js = require('@eslint/js')
-const tsPlugin = require('@typescript-eslint/eslint-plugin')
-const tsParser = require('@typescript-eslint/parser')
-const importPlugin = require('eslint-plugin-import')
+const { createRequire } = require('module')
+const path = require('path')
+const requireServer = createRequire(path.join(__dirname, 'server', 'package.json'))
+
+const js = requireServer('@eslint/js')
+const tsPlugin = requireServer('@typescript-eslint/eslint-plugin')
+const tsParser = requireServer('@typescript-eslint/parser')
+const importPlugin = requireServer('eslint-plugin-import')
 
 module.exports = [
   js.configs.recommended,
