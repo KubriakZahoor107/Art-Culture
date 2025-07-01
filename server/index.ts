@@ -1,6 +1,6 @@
 import prisma from './prismaClient.js'
 import dotenv from 'dotenv'
-import app from './app.js'
+import "./src/app"'
 import logger from './src/utils/logging.js'
 
 dotenv.config()

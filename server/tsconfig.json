@@ -11,15 +11,19 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "types": [
-      "node",
-      "jest"
-    ]
+    "rootDir": "src",
+    "types": ["node", "jest"]
   },
   "include": [
-    "src/**/*.{ts,js}",
-    "tests/**/*.{ts,js}",
+    "src/**/*.ts",
+    "src/**/*.js",
+    "tests/**/*.ts",
+    "tests/**/*.js",
     "*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
   ],
   "ts-node": {
     "esm": true
