@@ -12,18 +12,17 @@
     "resolveJsonModule": true,
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node", "jest"]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "tests/**/*.ts",
-    "tests/**/*.js",
-    "*.js"
+    "src/**/*",
+    "tests/**/*",
+    "src/types/express.d.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "jest.config.js",
+    "prismaClient.js"
   ],
   "ts-node": {
     "esm": true
