@@ -11,13 +11,14 @@ dotenv.config();
 const PORT = process.env.PORT || 5000;
 
 /**
- * Головна функція для запуску сервера та підключення до бази даних.
+ * Головна функція для запуску сервера та (заглушеного) підключення до бази даних.
  */
 async function startServer() {
         try {
-                // Підключаємося до бази даних
-                await prisma.$connect();
-                logger.info('✅ Successfully connected to the database.');
+                // ==== DB connection stub for Stage 0 ====
+                // await prisma.$connect();
+                logger.info('ℹ️  Skipping database connection (stubbed for Stage 0)');
+                // =========================================
 
                 // Запускаємо сервер і зберігаємо його екземпляр для коректного закриття
                 const server = app.listen(PORT, () => {
@@ -27,12 +28,12 @@ async function startServer() {
                 });
 
                 // Функція для graceful shutdown (коректного завершення роботи)
-                const shutdown = async (signal) => {
+                const shutdown = async (signal: string) => {
                         logger.info(`${signal} received. Shutting down gracefully...`);
                         server.close(async () => {
                                 logger.info('✅ HTTP server closed.');
-                                await prisma.$disconnect();
-                                logger.info('✅ Database connection closed.');
+                                // await prisma.$disconnect(); // залишаємо для Етапу 1
+                                logger.info('✅ Database disconnect skipped (stubbed)');
                                 process.exit(0);
                         });
                 };
@@ -40,26 +41,24 @@ async function startServer() {
                 // Слухаємо системні сигнали для коректного завершення
                 process.on('SIGINT', () => shutdown('SIGINT'));
                 process.on('SIGTERM', () => shutdown('SIGTERM'));
-
         } catch (error) {
                 logger.error('❌ Error starting the server:', error);
-                await prisma.$disconnect();
+                // await prisma.$disconnect();
                 process.exit(1);
         }
 }
 
 // Обробка неперехоплених помилок (глобально)
-process.on('uncaughtException', async (error) => {
+process.on('uncaughtException', async (error: Error) => {
         logger.error('Uncaught Exception:', error);
-        await prisma.$disconnect();
-        process.exit(1); // Обов'язково завершуємо процес, бо стан програми невідомий
+        // await prisma.$disconnect();
+        process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
         logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-        // Залежно від логіки, ви можете вирішити, чи завершувати процес
+        // залежно від логіки можна graceful shutdown
 });
-
 
 // Запускаємо наш сервер
 startServer();
