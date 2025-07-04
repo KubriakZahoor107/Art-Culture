@@ -1,11 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
-import prisma from '../prismaClient'
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import logger from '../utils/logging'
+// Файл: src/controllers/exhibitionController.ts
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { Request, Response, NextFunction, Express } from 'express'
+import prisma from '../prismaClient'
+import logger from '../utils/logging'
 
 export const createExhibitions = async (
   req: Request,
@@ -32,6 +29,7 @@ export const createExhibitions = async (
       paintingIds,
     } = req.body
 
+    // Перевірки коректності масивів ID
     if (!Array.isArray(artistIds) || artistIds.some(isNaN)) {
       return res.status(400).json({ errors: [{ msg: 'Invalid artist IDs' }] })
     }
@@ -44,15 +42,17 @@ export const createExhibitions = async (
       return res.status(400).json({ errors: [{ msg: 'Invalid museum ID' }] })
     }
 
-    const userId = req.user.id
+    const userId = (req as Request & { user: { id: number } }).user.id
 
-    const files = req.files || []
-    const images = Array.isArray(files)
-      ? files.map((file: Express.Multer.File) => ({
-        imageUrl: `../../uploads/exhibitionsImages/${file.filename}`,
+    // Обробка файлів з Multer
+    const files = req.files as Express.Multer.File[] | undefined
+    const images = files
+      ? files.map(file => ({
+        imageUrl: `/uploads/exhibitionsImages/${file.filename}`,
       }))
       : []
 
+    // Перевіряємо, що всі artistIds існують і мають роль CREATOR
     const creators = await prisma.user.findMany({
       where: { id: { in: artistIds }, role: 'CREATOR' },
     })
@@ -60,6 +60,7 @@ export const createExhibitions = async (
       return res.status(400).json({ errors: [{ msg: 'Some artist IDs are invalid' }] })
     }
 
+    // Перевіряємо products
     const paintings = await prisma.product.findMany({
       where: { id: { in: paintingIds }, authorId: { in: artistIds } },
     })
@@ -67,11 +68,13 @@ export const createExhibitions = async (
       return res.status(400).json({ errors: [{ msg: 'Some paintings are invalid' }] })
     }
 
+    // Перевіряємо музей
     const museum = await prisma.user.findUnique({ where: { id: parsedMuseumId } })
     if (!museum || museum.role !== 'MUSEUM') {
       return res.status(400).json({ errors: [{ msg: 'Invalid museum' }] })
     }
 
+    // Створюємо запис про виставку
     const exhibition = await prisma.exhibition.create({
       data: {
         title_en,
@@ -91,12 +94,12 @@ export const createExhibitions = async (
         createdBy: { connect: { id: userId } },
         museum: { connect: { id: parsedMuseumId } },
         exhibitionArtists: {
-          create: artistIds.map((artistId: number) => ({
+          create: artistIds.map(artistId => ({
             artist: { connect: { id: artistId } },
           })),
         },
         products: {
-          create: paintingIds.map((paintingId: number) => ({
+          create: paintingIds.map(paintingId => ({
             product: { connect: { id: paintingId } },
           })),
         },
@@ -108,10 +111,11 @@ export const createExhibitions = async (
       },
     })
 
-    return res.status(201).json({ exhibition, message: 'Exhibition created successfully' })
+    return res
+      .status(201)
+      .json({ exhibition, message: 'Exhibition created successfully' })
   } catch (error) {
     logger.error('Error creating exhibition:', error)
     return next(error)
   }
 }
-

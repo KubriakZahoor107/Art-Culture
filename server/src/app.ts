@@ -1,49 +1,48 @@
-import cors from "cors"
-import dotenv from "dotenv"
-import express from "express"
-import { Request, Response, NextFunction } from "express"
-import rateLimit from "express-rate-limit"
-import helmet from "helmet"
-import morgan from "morgan"
-import path, { dirname } from "path"
-import { fileURLToPath } from "url"
+// src/app.ts
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express, { Request, Response, NextFunction } from 'express';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-import errorHandler from "./src/middleware/errorHandler"
-import adminRoutes from "./src/routes/adminRoutes"
-import artTermsRoutes from "./src/routes/artTermsRoutes"
-import authRoutes from "./src/routes/authRoutes"
-import exhibitionRoutes from "./src/routes/exhibitionRoutes"
-import geoRoutes from "./src/routes/geoRoutes"
-import likeRoutes from "./src/routes/likeRoutes"
-import postRoutes from "./src/routes/postRoutes"
-import productRoutes from "./src/routes/productRoutes"
-import searchRoutes from "./src/routes/searchRoutes"
-import userRoutes from "./src/routes/userRoutes"
+import errorHandler from './middleware/errorHandler.js';
+import adminRoutes from './routes/adminRoutes.js';
+import artTermsRoutes from './routes/artTermsRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import exhibitionRoutes from './routes/exhibitionRoutes.js';
+import geoRoutes from './routes/geoRoutes.js';
+import likeRoutes from './routes/likeRoutes.js';
+import postRoutes from './routes/postRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
-dotenv.config()
+dotenv.config();
 
-const app = express()
+const app = express();
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// Для __dirname у ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-app.set("trust proxy", true)
+app.set('trust proxy', true);
 
-app.use(express.json())
+app.use(express.json());
 
-// Security HTTP headers
+// HTTP logger
+app.use(morgan('combined'));
+
+// Security headers
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'unsafe-inline'", "'self'"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "blob:",
-          "https://*.tile.openstreetmap.org",
-        ],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
@@ -51,66 +50,54 @@ app.use(
       },
     },
   })
-)
+);
 
-// CORS Configuration
+// CORS
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
     credentials: true,
   })
-)
+);
 
-// Rate Limiting
+// Rate limit
 const limiter = rateLimit({
-  windowMs: 0.2 * 60 * 1000, // 2 sec
+  windowMs: 0.2 * 60 * 1000, // 2s
   max: 10000,
-  message: "Too many requests from this IP, please try again later.",
-})
-app.use(limiter)
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use(limiter);
 
-// HTTP request logger
-app.use(morgan("combined"))
+// Custom request logger
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  console.info(`[${req.method}] ${req.originalUrl}`);
+  next();
+});
 
-// Middleware to parse JSON
-app.use(express.json())
-
-// ✅ Type-safe middleware for request logging
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[${req.method}] ${req.url}`)
-  next()
-})
-
-// Enforce HTTPS
-if (process.env.NODE_ENV === "production") {
+// Enforce HTTPS in production
+if (process.env.NODE_ENV === 'production') {
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.secure || req.headers["x-forwarded-proto"] === "https") {
-      next()
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+      next();
     } else {
-      res.redirect(`https://${req.headers.host}${req.url}`)
+      res.redirect(`https://${req.headers.host}${req.url}`);
     }
-  })
+  });
 }
 
-// API Routes
-app.use("/api/auth", authRoutes)
-app.use("/api/posts", postRoutes)
-app.use("/api/admin", adminRoutes)
-app.use("/api/products", productRoutes)
-app.use("/api/users", userRoutes)
-app.use("/api/posts/postId", postRoutes)
-app.use("/api/exhibitions", exhibitionRoutes)
-app.use("/api/art-terms", artTermsRoutes)
-app.use("/api/search", searchRoutes)
-app.use("/api/geo", geoRoutes)
-app.use("/api/like", likeRoutes)
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/exhibitions', exhibitionRoutes);
+app.use('/api/art-terms', artTermsRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/geo', geoRoutes);
+app.use('/api/like', likeRoutes);
 
-// Route debugging
-console.log("Environment", process.env.NODE_ENV)
-console.log("Client URL", process.env.CLIENT_URL)
+// Error handler (останній middleware)
+app.use(errorHandler);
 
-// Error Handling Middleware
-app.use(errorHandler)
-
-export default app
-
+export default app;
