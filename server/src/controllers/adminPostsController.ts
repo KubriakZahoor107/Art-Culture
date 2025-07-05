@@ -1,144 +1,151 @@
-import prisma from "../prismaClient"
-import { body, validationResult } from "express-validator"
-import authenticateToken from "../middleware/authMiddleware"
-import authorize from "../middleware/roleMIddleware"
+// File: server/src/controllers/adminPostsController.ts
 
-export const getAllAdminPosts = async (req, res, next) => {
+import prisma from "../prismaClient.js";
+import { body, validationResult } from "express-validator";
+import type { Request, Response, NextFunction, Router } from "express";
+import { authenticateToken, authorize } from "../middleware/authMiddleware.js";
+
+export const getAllAdminPosts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
-        const errors = validationResult(req)
+        const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() })
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
 
-        let page = req.params.page ?? 1;
-        let pageSize = req.params.pageSize ?? 20;
-        let orderBy = req.params.orderBy ?? "createdAt";
-        let validColumns = [
-            ["createdAt", "desc"], 
+        // Пагінація і сортування
+        const page = parseInt((req.query.page as string) ?? "1", 10);
+        let pageSize = parseInt((req.query.pageSize as string) ?? "20", 10);
+        const orderBy = (req.query.orderBy as string) ?? "createdAt";
+        const orderDir = (req.query.orderDir as "asc" | "desc") ?? "desc";
+
+        const validColumns: [string, "asc" | "desc"][] = [
+            ["createdAt", "desc"],
             ["title", "asc"],
             ["status", "asc"],
         ];
-        if (!validColumns.some((col) => col[0] === orderBy)) {
-            return res.status(400).json({ error: "Invalid sort order" });
+        if (!validColumns.some(([col]) => col === orderBy)) {
+            res.status(400).json({ error: "Invalid sort column" });
+            return;
         }
-
-        let orderDir = req.params.orderDir ?? validColumns.find((col) => col[0] === orderBy)[1];
-        page = parseInt(page);
-        pageSize = parseInt(pageSize);
         if (pageSize > 20) pageSize = 20;
-        if (page < 1) page = 1;
-        const { authorId, status } = req.query
-        const filter = authorId ? { authorId: parseInt(authorId) } : {}
 
-        const mainQuery = {
-            where: { status, ...filter },
-            include: {
-                author: {
-                    select: {
-                        email: true,
-                        id: true,
-                        title: true,
-                    },
-                },
-            },
+        // Фільтр по автору та статусу
+        const filter: Record<string, any> = {};
+        if (req.query.authorId) {
+            const authorId = parseInt(req.query.authorId as string, 10);
+            if (!isNaN(authorId)) filter.authorId = authorId;
         }
+        if (req.query.status) filter.status = req.query.status as string;
 
         const posts = await prisma.post.findMany({
-            ...mainQuery,
+            where: filter,
+            include: { author: { select: { id: true, email: true, title: true } } },
             skip: (page - 1) * pageSize,
             take: pageSize,
             orderBy: { [orderBy]: orderDir },
-        })
-        res.json({ data: posts })
-    } catch (error) {
-        next(error)
-    }
-}
+        });
 
-export const getPendingPosts = async (req, res, next) => {
+        res.json({ data: posts });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getPendingPosts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
         const posts = await prisma.post.findMany({
-            where: {
-                status: "PENDING",
-            },
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        email: true,
-                    },
-                },
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        })
-        return res.json(posts)
+            where: { status: "PENDING" },
+            include: { author: { select: { id: true, email: true } } },
+            orderBy: { createdAt: "desc" },
+        });
+        res.json(posts);
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
-export const approvePost = async (req, res, next) => {
+};
+
+export const approvePost = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
-        const postId = parseInt(req.params.id, 10)
-        const updatedPost = await prisma.post.update({
+        const postId = parseInt(req.params.id, 10);
+        const updated = await prisma.post.update({
             where: { id: postId },
             data: { status: "APPROVED" },
-        })
-
-        return res.json(updatedPost)
+        });
+        res.json(updated);
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
-export const rejectPost = async (req, res, next) => {
+export const rejectPost = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
-        const postId = parseInt(req.params.id, 10)
-        const updatedPost = await prisma.post.update({
+        const postId = parseInt(req.params.id, 10);
+        const updated = await prisma.post.update({
             where: { id: postId },
             data: { status: "REJECTED" },
-        })
-
-        return res.json(updatedPost)
+        });
+        res.json(updated);
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
-export const registerAdminPostRoutes = (router) => {
+export const registerAdminPostRoutes = (router: Router): void => {
     router.get(
         "/pending-posts",
         authenticateToken,
         authorize("ADMIN"),
-        getPendingPosts,
-    )
+        getPendingPosts
+    );
 
     router.get(
         "/posts",
         authenticateToken,
         authorize("ADMIN"),
         [
-            body("page").isInt({ min: 1 }).optional(),
-            body("pageSize").isInt({ min: 10, max: 100 }).optional(),
-            body("orderBy").isIn(["createdAt", "title", "status"]).optional(),
-            body("orderDir").isIn(["asc", "desc"]).optional(),
-            body("status").isIn(["APPROVED", "REJECTED"]).optional(),
-            body("authorId").isInt().optional(),
+            body("page").optional().isInt({ min: 1 }),
+            body("pageSize").optional().isInt({ min: 1, max: 20 }),
+            body("orderBy")
+                .optional()
+                .isIn(["createdAt", "title", "status"]),
+            body("orderDir").optional().isIn(["asc", "desc"]),
+            body("status").optional().isIn([
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+            ]),
+            body("authorId").optional().isInt(),
         ],
-        getAllAdminPosts,
-    )
+        getAllAdminPosts
+    );
 
     router.patch(
         "/posts/:id/approve",
         authenticateToken,
         authorize("ADMIN"),
-        approvePost,
-    )
+        approvePost
+    );
     router.patch(
         "/posts/:id/reject",
         authenticateToken,
         authorize("ADMIN"),
-        rejectPost,
-    )
-}
+        rejectPost
+    );
+};

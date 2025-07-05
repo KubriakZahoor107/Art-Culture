@@ -14,9 +14,9 @@ import {
   getPostsByAuthorId,
   updatePost,
   upload,
-} from "../controllers/postController"
-import authenticateToken from "../middleware/authMiddleware"
-import { logPostActions } from "../middleware/postMiddleware"
+} from "../controllers/postController.js"
+import authenticateToken from "../middleware/authMiddleware.js"
+import { logPostActions } from "../middleware/postMiddleware.js"
 
 const router = express.Router()
 

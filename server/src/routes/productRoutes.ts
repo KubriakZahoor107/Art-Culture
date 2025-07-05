@@ -14,10 +14,10 @@ import {
   getProducts,
   getUserProducts,
   updateProduct,
-} from "../controllers/productController"
-import authenticateToken from "../middleware/authMiddleware"
-import uploadPaintings from "../middleware/productImageUploader"
-import authorize from "../middleware/roleMIddleware"
+} from "../controllers/productController.js"
+import authenticateToken from "../middleware/authMiddleware.js"
+import uploadPaintings from "../middleware/productImageUploader.js"
+import authorize from "../middleware/roleMIddleware.js"
 const router = express.Router()
 
 // Create a new product (only accessible by MUSEUM and CREATOR roles)

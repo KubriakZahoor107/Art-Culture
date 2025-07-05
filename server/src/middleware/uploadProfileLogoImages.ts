@@ -1,111 +1,98 @@
-// src/middleware/uploadMiddleware.js
+// server/src/middleware/uploadProfileLogoImages.ts
 
-import fs from "fs/promises"
-import multer from "multer"
-import path, { dirname } from "path"
-import sharp from "sharp"
-import { fileURLToPath } from "url"
+import { Request, Response, NextFunction } from "express";
+import fs from "fs/promises";
+import multer, { MulterError, StorageEngine } from "multer";
+import path, { dirname } from "path";
+import sharp from "sharp";
+import { fileURLToPath } from "url";
 
-// Derive __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url)
-const __dirnameLocal = dirname(__filename)
+// Derive __dirname for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirnameLocal = dirname(__filename);
 
-// Configure memory storage
-const storage = multer.memoryStorage()
+// Multer memory storage
+const storage: StorageEngine = multer.memoryStorage();
 
-// File filter to allow only image files
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/
-  const extname = allowedTypes.test(
-    path.extname(file.originalname).toLowerCase(),
-  )
-  const mimetype = allowedTypes.test(file.mimetype)
+function fileFilter(
+  req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) {
+  const allowedTypes = /\.(jpe?g|png|gif|webp)$/i;
+  const extname = allowedTypes.test(path.extname(file.originalname));
+  const mimetype = allowedTypes.test(file.mimetype);
+
   if (extname && mimetype) {
-    return cb(null, true)
+    cb(null, true);
   } else {
-    cb(
-      new multer.MulterError(
-        "LIMIT_UNEXPECTED_FILE",
-        "Only images are allowed",
-      ),
-    )
+    cb(new MulterError("LIMIT_UNEXPECTED_FILE", "Only images are allowed"));
   }
 }
 
-const upload = multer({
+export const uploadProfileLogoImages = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit
-})
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+}).fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "museumLogo", maxCount: 1 },
+]);
 
-const processImages = async (req, res, next) => {
+export async function processProfileLogoImages(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    if (
-      !req.files ||
-      (req.files.profileImage && req.files.museumLogo === undefined)
-    ) {
-      // Handle profileImage only
-      if (req.files.profileImage) {
-        const file = req.files.profileImage[0]
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-        const filename = uniqueSuffix + path.extname(file.originalname)
-        const outputPath = path.join(
-          __dirnameLocal,
-          "../../uploads/profileImages",
-          filename,
-        )
+    // Обробка profileImage
+    if (req.files && "profileImage" in req.files) {
+      const file = (req.files as any).profileImage[0] as Express.Multer.File;
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const filename = uniqueSuffix + path.extname(file.originalname);
+      const outputDir = path.join(__dirnameLocal, "../../uploads/profileImages");
+      const outputPath = path.join(outputDir, filename);
 
-        // Ensure the directory exists
-        await fs.mkdir(path.dirname(outputPath), { recursive: true })
-
-        // Resize to 1920x1080
-        await sharp(file.buffer)
-          .resize(null, null, {
-            fit: sharp.fit.cover,
-            position: sharp.strategy.center,
-          })
-          .webp({ quality: 80 })
-          .toFile(outputPath)
-
-        req.body.profileImagePath = `/uploads/profileImages/${filename}`
-      }
-    }
-
-    if (req.files.museumLogo) {
-      const file = req.files.museumLogo[0]
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
-      const filename = uniqueSuffix + ".webp"
-      const outputPath = path.join(
-        __dirnameLocal,
-        "../../uploads/museumLogoImages",
-        filename,
-      )
-
-      // Ensure the directory exists
-      await fs.mkdir(path.dirname(outputPath), { recursive: true })
+      await fs.mkdir(outputDir, { recursive: true });
 
       await sharp(file.buffer)
-        .resize(null, null, {
-          fit: sharp.fit.outside,
-          position: sharp.strategy.center,
+        .resize({
+          width: 1920,
+          height: 1080,
+          fit: sharp.fit.cover,
+          position: sharp.gravity.center,      // <-- тут заміна
         })
-        .webp({ quality: 100 })
-        .toFile(outputPath)
+        .webp({ quality: 80 })
+        .toFile(outputPath);
 
-      req.body.museumLogoPath = `/uploads/museumLogoImages/${filename}`
+      req.body.profileImagePath = `/uploads/profileImages/${filename}`;
     }
 
-    next()
+    // Обробка museumLogo
+    if (req.files && "museumLogo" in req.files) {
+      const file = (req.files as any).museumLogo[0] as Express.Multer.File;
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const filename = uniqueSuffix + ".webp";
+      const outputDir = path.join(__dirnameLocal, "../../uploads/museumLogoImages");
+      const outputPath = path.join(outputDir, filename);
+
+      await fs.mkdir(outputDir, { recursive: true });
+
+      await sharp(file.buffer)
+        .resize({
+          fit: sharp.fit.outside,
+          position: sharp.gravity.center,      // <-- і тут
+        })
+        .webp({ quality: 100 })
+        .toFile(outputPath);
+
+      req.body.museumLogoPath = `/uploads/museumLogoImages/${filename}`;
+    }
+
+    next();
   } catch (error) {
-    console.error("Error processing images:", error)
-    next(error)
+    console.error("Error processing images:", error);
+    next(error);
   }
 }
 
-export default {
-  upload: upload.fields([
-    { name: "profileImage", maxCount: 1 },
-    { name: "museumLogo", maxCount: 1 },
-  ]),
-  processImages,
-}

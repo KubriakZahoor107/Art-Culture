@@ -1,12 +1,24 @@
 // src/types/express.d.ts
-import { File } from 'multer'
-import { User } from '@prisma/client'
+
+import type { User } from '@prisma/client'
+import type { File as MulterFile } from 'multer'
 
 declare global {
     namespace Express {
         interface Request {
-            user?: User // або { id: number }
-            files?: File[]
+            /** додається після authenticateToken */
+            user?: User
+            /** multer.memoryStorage() або .fields()  */
+            files?: MulterFile[]
         }
     }
 }
+
+// порожній експорт, щоб TS розцінював цей файл як модуль
+export { }
+
+
+
+
+
+

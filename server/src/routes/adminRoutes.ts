@@ -1,49 +1,57 @@
-import express from "express"
-import {
-  approveProduct,
-  getPendingCounts,
-  getPendingProducts,
-  rejectProduct,
-} from "../controllers/adminController"
-import {
-  registerAdminPostRoutes,
-} from "../controllers/adminPostsController"
-import {
-  registerAdminUserRoutes,
-} from "../controllers/adminUsersController"
-import authenticateToken from "../middleware/authMiddleware"
-import authorize from "../middleware/roleMIddleware"
+// server/src/routes/adminRoutes.ts
+import { Router } from "express";
+import asyncHandler from "express-async-handler";
+import { body } from "express-validator";
 
-const router = express.Router()
+// middleware
+import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
+// контролери для адмін-постів
+import {
+    getAllAdminPosts,
+    getPendingPosts,
+    approvePost,
+    rejectPost,
+} from "../controllers/adminPostsController.js";
 
+const router = Router();
+
+// GET /api/admin/pending-posts
 router.get(
-  "/pending-counts",
-  authenticateToken,
-  authorize("ADMIN"),
-  getPendingCounts,
-)
+    "/pending-posts",
+    authenticateToken,
+    authorize("ADMIN"),
+    asyncHandler(getPendingPosts),
+);
 
+// GET /api/admin/posts
 router.get(
-  "/pending-products",
-  authenticateToken,
-  authorize("ADMIN"),
-  getPendingProducts,
-)
+    "/posts",
+    authenticateToken,
+    authorize("ADMIN"),
+    body("page").optional().isInt({ min: 1 }),
+    body("pageSize").optional().isInt({ min: 1, max: 20 }),
+    body("orderBy").optional().isIn(["createdAt", "title", "status"]),
+    body("orderDir").optional().isIn(["asc", "desc"]),
+    body("status").optional().isIn(["PENDING", "APPROVED", "REJECTED"]),
+    body("authorId").optional().isInt(),
+    asyncHandler(getAllAdminPosts),
+);
 
-registerAdminPostRoutes(router);
-registerAdminUserRoutes(router);
-
+// PATCH /api/admin/posts/:id/approve
 router.patch(
-  "/products/:id/approve",
-  authenticateToken,
-  authorize("ADMIN"),
-  approveProduct,
-)
-router.patch(
-  "/products/:id/reject",
-  authenticateToken,
-  authorize("ADMIN"),
-  rejectProduct,
-)
+    "/posts/:id/approve",
+    authenticateToken,
+    authorize("ADMIN"),
+    asyncHandler(approvePost),
+);
 
-export default router
+// PATCH /api/admin/posts/:id/reject
+router.patch(
+    "/posts/:id/reject",
+    authenticateToken,
+    authorize("ADMIN"),
+    asyncHandler(rejectPost),
+);
+
+export default router;
+

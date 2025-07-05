@@ -1,103 +1,76 @@
-// src/app.ts
-import cors from 'cors';
-import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
+import * as helmetPkg from 'helmet';
+const helmet = (helmetPkg as any).default ?? helmetPkg;
+import * as rateLimitPkg from 'express-rate-limit';
+const rateLimit = (rateLimitPkg as any).default ?? rateLimitPkg;
+import cors from 'cors';
 import morgan from 'morgan';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import errorHandler from './middleware/errorHandler.js';
+import authRoutes from "./routes/authRoutes";
 import adminRoutes from './routes/adminRoutes.js';
-import artTermsRoutes from './routes/artTermsRoutes.js';
-import authRoutes from './routes/authRoutes.js';
+import postRoutes from './routes/postRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 import exhibitionRoutes from './routes/exhibitionRoutes.js';
+import artTermsRoutes from './routes/artTermsRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 import geoRoutes from './routes/geoRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
-import postRoutes from './routes/postRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import searchRoutes from './routes/searchRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-
-dotenv.config();
 
 const app = express();
 
-// Для __dirname у ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// Базові middleware
 app.set('trust proxy', true);
-
 app.use(express.json());
-
-// HTTP logger
-app.use(morgan('combined'));
-
-// Security headers
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'unsafe-inline'", "'self'"],
-        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org'],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
-      },
-    },
+        frameSrc: ["'none'"]
+      }
+    }
   })
 );
-
-// CORS
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
-    credentials: true,
+    credentials: true
   })
 );
-
-// Rate limit
-const limiter = rateLimit({
-  windowMs: 0.2 * 60 * 1000, // 2s
-  max: 10000,
-  message: 'Too many requests from this IP, please try again later.',
-});
-app.use(limiter);
-
-// Custom request logger
-app.use((req: Request, _res: Response, next: NextFunction) => {
+app.use(
+  rateLimit({
+    windowMs: 2_000,
+    max: 10_000,
+    message: 'Too many requests, try again later.'
+  })
+);
+app.use(morgan('combined'));
+app.use((req: Request, res: Response, next: NextFunction) => {
   console.info(`[${req.method}] ${req.originalUrl}`);
   next();
 });
 
-// Enforce HTTPS in production
-if (process.env.NODE_ENV === 'production') {
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
-      next();
-    } else {
-      res.redirect(`https://${req.headers.host}${req.url}`);
-    }
-  });
-}
-
-// API routes
+// Маршрути
 app.use('/api/auth', authRoutes);
-app.use('/api/posts', postRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/exhibitions', exhibitionRoutes);
 app.use('/api/art-terms', artTermsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/geo', geoRoutes);
 app.use('/api/like', likeRoutes);
 
-// Error handler (останній middleware)
+// Обробник помилок наприкінці
 app.use(errorHandler);
 
 export default app;
+

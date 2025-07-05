@@ -1,31 +1,35 @@
-// tsconfig.json
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
+  "display": "Art-Culture Server",
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "node16",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "resolveJsonModule": true,
     "allowJs": true,
+    "experimentalSpecifierResolution": "node",
+    "moduleSuffixes": [
+      ".js",
+      ".ts"
+    ],
     "outDir": "./dist",
     "rootDir": "./src"
   },
   "include": [
-    "src/**/*",
-    "tests/**/*",
-    "src/types/express.d.ts"
+    "src/index.ts",
+    "src",
+    "src/types/env.d.ts",
+    "src/types/modules.d.ts",
+    "src/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "jest.config.js",
-    "prismaClient.js"
+    "dist"
   ],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "esm": true
   }
 }

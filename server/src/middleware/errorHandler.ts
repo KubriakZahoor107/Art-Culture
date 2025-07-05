@@ -1,21 +1,40 @@
-import logger from '../utils/logging'
+// server/src/middleware/errorHandler.ts
+import logger from "../utils/logging.js";
+import { Request, Response, NextFunction, RequestHandler } from 'express'
 
-const errorHandler = (err, req, res, next) => {
-  logger.error(err.stack)
-
-  if (res.headersSent) {
-    return next(err)
+export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler =>
+  (req, res, next) => {
+    Promise
+      .resolve(fn(req, res, next))
+      .catch(next)
   }
 
-  const statusCode = err.status || (err.name === 'ValidationError' ? 400 : 500)
-  const message = err.message ||
-    (statusCode === 400 ? 'Validation error' : 'Internal Server Error')
-  logger.error(`Error handled with status ${statusCode}: ${message}`)
-
-  res.status(statusCode).json({
-    success: false,
-    message,
-  })
+// Спеціальний тип для помилки з HTTP-статусом
+interface HttpError extends Error {
+  status?: number;
 }
 
-export default errorHandler
+export default function errorHandler(
+  err: HttpError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  // Логуємо помилку
+  logger.error(err);
+
+  const statusCode = err.status ?? 500;
+  const message =
+    statusCode === 500
+      ? "Internal Server Error"
+      : err.message || "Something went wrong";
+
+  res.status(statusCode).json({
+    error: {
+      message,
+      // у development можна віддавати стек
+      ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    },
+  });
+}
+

@@ -1,7 +1,7 @@
 // src/controllers/userController.js
 
-import prisma from "../prismaClient"
-import logger from "../utils/logging"
+import prisma from "../prismaClient.js"
+import logger from "../utils/logging.js"
 
 // src/controllers/userController.js
 

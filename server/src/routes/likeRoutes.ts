@@ -7,8 +7,8 @@ import {
   getTopLikedPaintings,
   getTopLikedPosts,
   toggleLikeEntity,
-} from "../controllers/likeController"
-import authenticateToken from "../middleware/authMiddleware"
+} from "../controllers/likeController.js"
+import authenticateToken from "../middleware/authMiddleware.js"
 
 const router = express.Router()
 

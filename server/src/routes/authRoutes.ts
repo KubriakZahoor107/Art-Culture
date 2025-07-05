@@ -1,129 +1,303 @@
-import express from "express"
-import { body } from "express-validator"
-import {
-  // authController,
-  getCurrentUser,
-  login,
-  register,
-  registerUser,
-  resetPassword,
-  resetPasswordConfirm,
-  updateUserProfile,
-} from "../controllers/authController"
-import authenticateToken from "../middleware/authMiddleware"
-import authorize from "../middleware/roleMIddleware"
-import uploadProfileLogo from "../middleware/uploadProfileLogoImages"
+// server/src/controllers/authController.ts
+import bcrypt from 'bcrypt';
+import { Request, Response, NextFunction } from 'express';
+import { validationResult } from 'express-validator';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
 
-const router = express.Router()
+import prisma from '../prismaClient.js';
+import generateToken from '../utils/generateToken.js';
+import logger from '../utils/logging.js';
+import sendEmail from '../utils/sendEmails.js';
 
-// Registration Route with Validation
-router.post(
-  "/register",
-  uploadProfileLogo.upload,
-  (req, res, next) => {
-    if (!req.file) {
-      return next()
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+interface MuseumFields {
+  country?: string | null;
+  city?: string | null;
+  street?: string | null;
+  house_number?: string | null;
+  postcode?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+}
+
+// Допоміжна функція
+function applyMuseumFields(
+  target: Record<string, any>,
+  source: MuseumFields
+): void {
+  const stringFields: Array<keyof MuseumFields> = [
+    'country',
+    'city',
+    'street',
+    'house_number',
+    'postcode',
+  ];
+  const numericFields: Array<keyof MuseumFields> = ['lat', 'lon'];
+
+  for (const f of stringFields) {
+    target[f] = source[f] ?? null;
+  }
+  for (const f of numericFields) {
+    const raw = source[f];
+    target[f] = raw != null ? parseFloat(String(raw)) : null;
+  }
+}
+
+/**
+ * Реєстрація (ADMIN)
+ */
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-    uploadProfileLogo.processImages(req, res, next)
-  },
 
-  [
-    body("email").isEmail().withMessage("Enter a valid email"),
-    body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters"),
-    body("role")
-      .optional()
-      .isIn([
-        "ADMIN",
-        "USER",
-        "MUSEUM",
-        "CREATOR",
-        "EDITOR",
-        "AUTHOR",
-        "EXHIBITION",
-      ])
-      .withMessage("Invalid role"),
-    // Add additional validations for address fields if role is MUSEUM
-    body("country")
-      .if(body("role").equals("MUSEUM"))
-      .notEmpty()
-      .withMessage("Country is required for museums"),
-    body("city")
-      .if(body("role").equals("MUSEUM"))
-      .notEmpty()
-      .withMessage("State is required for museums"),
-    body("street")
-      .if(body("role").equals("MUSEUM"))
-      .notEmpty()
-      .withMessage("Street is required for museums"),
-    body("house_number")
-      .if(body("role").equals("MUSEUM"))
-      .notEmpty()
-      .withMessage("House number is required for museums"),
-    body("postcode")
-      .if(body("role").equals("MUSEUM"))
-      .notEmpty()
-      .withMessage("Postcode is required for museums"),
-    body("lat")
-      .if(body("role").equals("MUSEUM"))
-      .isFloat()
-      .withMessage("Latitude must be a valid number"),
-    body("lon")
-      .if(body("role").equals("MUSEUM"))
-      .isFloat()
-      .withMessage("Longitude must be a valid number"),
-  ],
+    const {
+      email,
+      password,
+      role = 'USER',
+      title,
+      bio,
+      country,
+      city,
+      street,
+      house_number,
+      postcode,
+      lat,
+      lon,
+    } = req.body as Record<string, any>;
 
-  register,
-)
-
-// Self-Registration Route - Accessible to All
-router.post(
-  "/signup",
-  authenticateToken,
-  authorize("ADMIN"),
-  [
-    body("email").isEmail().withMessage("Enter a valid email"),
-    body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters"),
-  ],
-  registerUser,
-)
-
-// Login Route
-router.post("/login", login)
-
-// Password Reset Request
-router.post("/reset-password", resetPassword)
-
-// Password Reset Confirmation
-router.post("/reset-password/:token", resetPasswordConfirm)
-
-router.get("/me", authenticateToken, getCurrentUser)
-
-router.put(
-  "/me",
-  authenticateToken,
-  uploadProfileLogo.upload,
-  (req, res, next) => {
-    if (!req.file) {
-      return next()
+    if (await prisma.user.count({ where: { email } })) {
+      return res.status(400).json({ error: 'User already exists' });
     }
-    uploadProfileLogo.processImages(req, res, next)
-  },
 
-  [
-    body("title")
-      .optional()
-      .isLength({ max: 100 })
-      .withMessage("Title must be less than 100 characters"),
-    body("bio")
-      .optional()
-      .isLength({ max: 1500 })
-      .withMessage("Bio must be less than 500 characters"),
-  ],
-  updateUserProfile,
-)
-export default router
+    const hashed = await bcrypt.hash(password, 10);
+    const userData: Record<string, any> = {
+      email,
+      password: hashed,
+      images: req.body.profileImagePath ?? null,
+      role,
+      title,
+      bio,
+    };
+
+    if (role === 'MUSEUM') {
+      applyMuseumFields(userData, { country, city, street, house_number, postcode, lat, lon });
+    }
+
+    const user = await prisma.user.create({ data: userData });
+
+    if (role === 'MUSEUM' && req.body.museumLogoPath) {
+      await prisma.museum_logo_images.create({
+        data: { imageUrl: req.body.museumLogoPath, userId: user.id },
+      });
+    }
+
+    await sendEmail(
+      user.email,
+      'Підтвердження реєстрації',
+      `Дякуємо за реєстрацію на ArtPlayUkraine.`,
+      `<p>Дякуємо за реєстрацію на ArtPlayUkraine. <a href="${process.env.CLIENT_URL}">Перейти до сайту</a></p>`
+    );
+
+    const token = generateToken(user);
+    const { password: _pwd, ...userWithoutPassword } = user;
+    return res.status(201).json({ token, user: userWithoutPassword });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Самостійна реєстрація (USER)
+ */
+export const registerUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body as { email: string; password: string };
+    if (await prisma.user.count({ where: { email } })) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { email, password: hashed, role: 'USER' },
+    });
+
+    const token = generateToken(user);
+    const { password: _pwd, ...userWithoutPassword } = user;
+    return res.status(201).json({ token, user: userWithoutPassword });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Логін
+ */
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password } = req.body as { email: string; password: string };
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = generateToken(user);
+    const { password: _pwd, ...userWithoutPassword } = user;
+    return res.json({ token, user: userWithoutPassword });
+  } catch (err) {
+    logger.error('Login error:', err);
+    next(err);
+  }
+};
+
+/**
+ * Скидання пароля
+ */
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const { email } = req.body as { email: string };
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+      expiresIn: '1h',
+    });
+    await prisma.user.update({
+      where: { email },
+      data: { resetToken, resetTokenExpiry: new Date(Date.now() + 3600000) },
+    });
+
+    const link = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    await sendEmail(
+      user.email,
+      'Password Reset Request',
+      `Click to reset your password: ${link}`,
+      `Click to reset your password: ${link}`
+    );
+
+    return res.json({ message: 'Password reset link sent to email' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Підтвердження скидання пароля
+ */
+export const resetPasswordConfirm = async (
+  req: Request<{ token: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const { token } = req.params;
+    const { newPassword } = req.body as { newPassword: string };
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.resetToken !== token || (user.resetTokenExpiry ?? 0) < Date.now()) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: decoded.id },
+      data: { password: hashed, resetToken: null, resetTokenExpiry: null },
+    });
+
+    return res.json({ message: 'Password reset successful' });
+  } catch (err: any) {
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(400).json({ error: 'Invalid token' });
+    }
+    next(err);
+  }
+};
+
+/**
+ * Поточний користувач
+ */
+export const getCurrentUser = async (
+  req: Request & { user?: { id: number } },
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        title: true,
+        bio: true,
+        images: true,
+        country: true,
+        city: true,
+        street: true,
+        house_number: true,
+        postcode: true,
+        lat: true,
+        lon: true,
+        createdAt: true,
+        updatedAt: true,
+        museum_logo_image: { select: { imageUrl: true } },
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+};

@@ -1,5 +1,6 @@
+// @ts-nocheck
 import request from 'supertest'
-import app from '../app.js'
+import app from '../app.js.ts'
 import prisma from '../prismaClient.js'
 
 jest.mock('../prismaClient.js', () => ({

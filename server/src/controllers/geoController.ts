@@ -1,14 +1,37 @@
-// controllers/geoController.js
+// server/src/controllers/geoController.ts
+import { Request, Response, NextFunction } from "express"
 import axios from "axios"
 
-export const searchAddress = async (req, res, next) => {
+interface NominatimAddress {
+  road?: string
+  house_number?: string
+  city?: string
+  town?: string
+  village?: string
+  state?: string
+  postcode?: string
+  country?: string
+}
+
+interface NominatimResult {
+  address?: NominatimAddress
+  lat: string
+  lon: string
+}
+
+export const searchAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q
-    if (!query || query.length < 3) {
-      return res.json([]) // Return an empty array if query too short
+    const query = String(req.query.q ?? "")
+    if (query.length < 3) {
+      res.json([])
+      return
     }
 
-    const response = await axios.get(
+    const response = await axios.get<NominatimResult[]>(
       "https://nominatim.openstreetmap.org/search",
       {
         params: {
@@ -18,62 +41,62 @@ export const searchAddress = async (req, res, next) => {
           limit: 10,
         },
         headers: {
-          "User-Agent": "ArtPlayUkraine/1.0 ",
+          "User-Agent": "ArtPlayUkraine/1.0",
         },
-      },
+      }
     )
 
     const processedData = response.data.map((item) => {
-      // Safely access item.address
-      const address = item.address || {}
-      // Extract fields with defaults if undefined
-      const road = address.road || ""
-      const house_number = address.house_number || ""
-      const city = address.city || address.town || address.village || ""
-      const state = address.state || ""
-      const postcode = address.postcode || ""
+      const addr = item.address ?? {}
+      const road = addr.road ?? ""
+      const house_number = addr.house_number ?? ""
+      const city = addr.city ?? addr.town ?? addr.village ?? ""
+      const state = addr.state ?? ""
+      const postcode = addr.postcode ?? ""
 
-      // Format the road name
-      // Use startsWith (not startWith)
       const roadFormatted = road
         ? road.toLowerCase().startsWith("вулиця")
           ? road
           : `вулиця ${road}`
         : ""
 
-      const formattedAddress = [
+      const display_name = [
         roadFormatted,
-        house_number ? house_number.toUpperCase() : "",
+        house_number.toUpperCase(),
         city,
         state,
         postcode || "Нема індекса",
       ]
-        .filter((part) => part)
+        .filter(Boolean)
         .join(", ")
 
       return {
-        display_name: formattedAddress,
+        display_name,
         lat: item.lat,
         lon: item.lon,
       }
     })
 
-    // Return the data from Nominatim directly to the client
     res.json(processedData)
-  } catch (error) {
-    console.error("Error fetching address:", error)
-    next(error)
+  } catch (err) {
+    console.error("Error fetching address:", err)
+    next(err)
   }
 }
 
-export const searchMuseumAddress = async (req, res, next) => {
+export const searchMuseumAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q
-    if (!query || query.length < 3) {
-      return res.json([]) // Return an empty array if query too short
+    const query = String(req.query.q ?? "")
+    if (query.length < 3) {
+      res.json([])
+      return
     }
 
-    const response = await axios.get(
+    const response = await axios.get<NominatimResult[]>(
       "https://nominatim.openstreetmap.org/search",
       {
         params: {
@@ -83,24 +106,20 @@ export const searchMuseumAddress = async (req, res, next) => {
           limit: 10,
         },
         headers: {
-          "User-Agent": "ArtPlayUkraine/1.0 ",
+          "User-Agent": "ArtPlayUkraine/1.0",
         },
-      },
+      }
     )
 
     const processedData = response.data.map((item) => {
-      // Safely access item.address
-      const address = item.address || {}
-      // Extract fields with defaults if undefined
-      const road = address.road || ""
-      const house_number = address.house_number || ""
-      const city = address.city || address.town || address.village || ""
-      const state = address.state || ""
-      const postcode = address.postcode || ""
-      const country = address.country || ""
+      const addr = item.address ?? {}
+      const road = addr.road ?? ""
+      const house_number = addr.house_number ?? ""
+      const city = addr.city ?? addr.town ?? addr.village ?? ""
+      const state = addr.state ?? ""
+      const postcode = addr.postcode ?? ""
+      const country = addr.country ?? ""
 
-      // Format the road name
-      // Use startsWith (not startWith)
       const roadFormatted = road
         ? road.toLowerCase().startsWith("вулиця")
           ? road
@@ -119,10 +138,9 @@ export const searchMuseumAddress = async (req, res, next) => {
       }
     })
 
-    // Return the data from Nominatim directly to the client
     res.json(processedData)
-  } catch (error) {
-    console.error("Error fetching address:", error)
-    next(error)
+  } catch (err) {
+    console.error("Error fetching museum address:", err)
+    next(err)
   }
 }

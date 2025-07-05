@@ -5,8 +5,8 @@ import {
 	getArtTermsByLetter,
 	getPagesArtTerms,
 	getArtTermById,
-} from '../controllers/artTermsController'
-import { authenticateToken, authorize } from '../middleware/index'
+} from '../controllers/artTermsController.js'
+import { authenticateToken, authorize } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
