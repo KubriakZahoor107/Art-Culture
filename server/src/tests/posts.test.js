@@ -1,6 +1,6 @@
 // @ts-nocheck
 import request from 'supertest'
-import app from '../app.js.ts'
+import app from '../app.js'
 import prisma from '../prismaClient.js'
 
 jest.mock('../prismaClient.js', () => ({
@@ -10,8 +10,9 @@ jest.mock('../prismaClient.js', () => ({
 }))
 
 describe('GET /api/posts', () => {
-  it('responds with json', async () => {
+  it('responds with json array', async () => {
     const res = await request(app).get('/api/posts')
     expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual([])
   })
 })
