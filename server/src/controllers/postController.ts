@@ -241,6 +241,36 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
 
 export const getCreatorsPosts = makeRoleFinder("CREATOR");
 export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPosts = makeRoleFinder("EXHIBITION");
-export const getMuseumsPosts = makeRoleFinder("MUSEUM");
+export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
+export const getMuseumsPost = makeRoleFinder("MUSEUM");
+
+// ———————————————
+// GET POSTS BY ENTITY ID
+// ———————————————
+export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = parseInt(req.params[param], 10);
+      if (isNaN(id)) {
+        res.status(400).json({ error: "Invalid ID" });
+        return;
+      }
+      const posts = await prisma.post.findMany({
+        where: { [param]: id } as any,
+        include: { author: { select: { id: true, email: true, title: true, role: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+      res.json({ posts });
+    } catch (err: any) {
+      if (err.code === "P2021") {
+        return res.json({ posts: [] });
+      }
+      next(err);
+    }
+  };
+}
+
+export const getPostsByAuthorId = makeByAuthorId("authorId");
+export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
+export const getPostByMuseumId = makeByAuthorId("museumId");
 
