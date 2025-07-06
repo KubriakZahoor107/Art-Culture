@@ -1,4 +1,3 @@
-// server/src/controllers/postController.ts
 import { Request, Response, NextFunction } from "express";
 import multer, { FileFilterCallback } from "multer";
 import fs from "fs";
