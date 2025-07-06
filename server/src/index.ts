@@ -1,4 +1,13 @@
-import 'dotenv/config';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
+
+// Визначаємо __dirname в ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Завантажуємо .env з перезаписом навіть якщо змінна вже є
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 // DEBUG: виводимо, що реально прочиталось із .env
 console.log('🚀 Loaded DATABASE_URL:', process.env.DATABASE_URL);
