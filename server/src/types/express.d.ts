@@ -1,15 +1,13 @@
 // src/types/express.d.ts
 
-import type { User } from '@prisma/client'
-import type { File as MulterFile } from 'multer'
 
 declare global {
     namespace Express {
         interface Request {
             /** додається після authenticateToken */
-            user?: User
+            user?: import('@prisma/client').User
             /** multer.memoryStorage() або .fields()  */
-            files?: MulterFile[]
+            files?: Express.Multer.File[]
         }
     }
 }
