@@ -1,64 +1,69 @@
-import prisma from "../../prismaClient.js";
-export const getPendingCounts = async (req, res, next) => {
+import prisma from "../prismaClient.js";
+export async function getAllUsers(req, res, next) {
     try {
-        const getPostCounts = await prisma.post.count({
-            where: {
-                status: "PENDING",
+        const users = await prisma.user.findMany({
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                title: true,
+                createdAt: true,
             },
         });
-        const getCardCounts = await prisma.product.count({
-            where: {
-                status: "PENDING",
+        res.json({ users });
+    }
+    catch (err) {
+        next(err);
+    }
+}
+export async function getUserById(req, res, next) {
+    try {
+        const id = Number(req.params.id);
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                title: true,
+                bio: true,
+                country: true,
+                city: true,
+                createdAt: true,
+                updatedAt: true,
             },
         });
-        return res.json({
-            posts: getPostCounts,
-            products: getCardCounts,
-        });
+        if (!user) {
+            res.status(404).json({ error: "User not found" });
+            return;
+        }
+        res.json({ user });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
-};
-export const getPendingProducts = async (req, res, next) => {
+}
+export async function updateUser(req, res, next) {
     try {
-        const products = await prisma.product.findMany({
-            where: {
-                status: "PENDING",
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
+        const id = Number(req.params.id);
+        const { email, role, title, bio, country, city } = req.body;
+        const updated = await prisma.user.update({
+            where: { id },
+            data: { email, role, title, bio, country, city },
         });
-        return res.json(products);
+        res.json({ user: updated });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
-};
-export const approveProduct = async (req, res, next) => {
+}
+export async function deleteUser(req, res, next) {
     try {
-        const productId = parseInt(req.params.id, 10);
-        const updated = await prisma.product.update({
-            where: { id: productId },
-            data: { status: "APPROVED" },
-        });
-        return res.json(updated);
+        const id = Number(req.params.id);
+        await prisma.user.delete({ where: { id } });
+        res.status(204).end();
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
-};
-export const rejectProduct = async (req, res, next) => {
-    try {
-        const productId = parseInt(req.params.id, 10);
-        const updated = await prisma.product.update({
-            where: { id: productId },
-            data: { status: "REJECTED" },
-        });
-        return res.json(updated);
-    }
-    catch (error) {
-        next(error);
-    }
-};
+}

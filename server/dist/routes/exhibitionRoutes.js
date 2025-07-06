@@ -1,69 +1,68 @@
-import express from "express";
+// server/src/routes/exhibitionRoutes.ts
+import { Router } from "express";
+import asyncHandler from "express-async-handler";
 import { body, validationResult } from "express-validator";
-import { createExhibitions, deleteExhibition, getAllExhibitions, getExhibitionById, getMyExhibitions, getProductByExhibitionId, updateExhibition, } from "../controllers/exhibitionController.js";
-import authenticateToken from "../middleware/authMiddleware.js";
+import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
 import uploadExhibition from "../middleware/exhibitionImageUploader.js";
-import authorize from "../middleware/roleMIddleware.js";
-const router = express.Router();
-router.post("/", authenticateToken, authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"), 
-//uploadExhibition.array('exhibitionImages', 10),
-uploadExhibition.upload, uploadExhibition.processImages, [
-    body("title_en").notEmpty().withMessage("English title is required"),
-    body("title_uk").notEmpty().withMessage("Ukrainian title is required"),
-    body("description_en")
-        .notEmpty()
-        .withMessage("English description is required"),
-    body("description_uk")
-        .notEmpty()
-        .withMessage("Ukrainian description is required"),
-    // body('location_en').notEmpty().withMessage('English location is required'),
-    // body('location_uk')
-    // 	.notEmpty()
-    // 	.withMessage('Ukrainian location is required'),
-], (req, res, next) => {
+import { createExhibitions, getAllExhibitions, getExhibitionById, getMyExhibitions, getProductsByExhibitionId, // <- тут була єдина форма
+updateExhibition, deleteExhibition, } from "../controllers/exhibitionController.js";
+const router = Router();
+/**
+ * POST /api/exhibitions
+ */
+router.post("/", authenticateToken, authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"), uploadExhibition.upload, uploadExhibition.processImages, body("title_en").notEmpty().withMessage("English title is required"), body("title_uk").notEmpty().withMessage("Ukrainian title is required"), body("description_en").notEmpty().withMessage("English description is required"), body("description_uk").notEmpty().withMessage("Ukrainian description is required"), 
+// ручна перевірка express-validator
+(req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        res.status(400).json({ errors: errors.array() });
+        return;
     }
     next();
-}, createExhibitions);
-router.get("/", getAllExhibitions);
-router.get("/my-exhibitions", authenticateToken, getMyExhibitions);
-router.get("/:exhibitionId/products", getProductByExhibitionId);
-router.get("/:id", getExhibitionById);
-router.put("/:id", authenticateToken, authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"), uploadExhibition.upload, uploadExhibition.processImages, [
-    body("title_en").notEmpty().withMessage("Title is required"),
-    body("description_en").notEmpty().withMessage("Description is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
-    body("description_uk").notEmpty().withMessage("Потрібен опис"),
-    body("location_en").optional().isString(),
-    body("location_uk").optional().isString(),
-    body("artistIds")
-        .optional()
-        .custom((value) => {
-        if (typeof value === "string") {
-            try {
-                const parsedValue = JSON.parse(value);
-                if (!Array.isArray(parsedValue)) {
-                    throw new Error("artistIds must be an array");
-                }
-            }
-            catch (e) {
-                throw new Error("Invalid artistIds format");
-            }
+}, 
+// ваш контролер
+asyncHandler(createExhibitions));
+/**
+ * GET /api/exhibitions
+ */
+router.get("/", asyncHandler(getAllExhibitions));
+/**
+ * GET /api/exhibitions/my-exhibitions
+ */
+router.get("/my-exhibitions", authenticateToken, asyncHandler(getMyExhibitions));
+/**
+ * GET /api/exhibitions/:exhibitionId/products
+ */
+router.get("/:exhibitionId/products", asyncHandler(getProductsByExhibitionId));
+/**
+ * GET /api/exhibitions/:id
+ */
+router.get("/:id", asyncHandler(getExhibitionById));
+/**
+ * PUT /api/exhibitions/:id
+ */
+router.put("/:id", authenticateToken, authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"), uploadExhibition.upload, uploadExhibition.processImages, body("title_en").notEmpty().withMessage("Title is required"), body("title_uk").notEmpty().withMessage("Потрібен заголовок"), body("description_en").notEmpty().withMessage("Description is required"), body("description_uk").notEmpty().withMessage("Потрібен опис"), body("location_en").optional().isString(), body("location_uk").optional().isString(), body("artistIds")
+    .optional()
+    .custom((value) => {
+    if (typeof value === "string") {
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed)) {
+            throw new Error("artistIds must be an array");
         }
-        return true;
-    }),
-    body("time").optional().isString(),
-    body("startDate").optional().isString(),
-    body("endDate").optional().isString(),
-], (req, res, next) => {
-    // Validation error handler
+    }
+    return true;
+}), body("time").optional().isString(), body("startDate").optional().isString(), body("endDate").optional().isString(), 
+// ручна перевірка express-validator
+(req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        res.status(400).json({ errors: errors.array() });
+        return;
     }
     next();
-}, updateExhibition);
-router.delete("/:id", authenticateToken, deleteExhibition);
+}, asyncHandler(updateExhibition));
+/**
+ * DELETE /api/exhibitions/:id
+ */
+router.delete("/:id", authenticateToken, asyncHandler(deleteExhibition));
 export default router;

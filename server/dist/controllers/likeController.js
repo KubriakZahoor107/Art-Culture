@@ -1,5 +1,8 @@
-import prisma from "../../prismaClient.js";
-function getLikeField(entityType) {
+import prisma from "../prismaClient.js";
+/**
+ * Визначає, за яким полем шукати лайки
+ */
+const getLikeField = (entityType) => {
     switch (entityType) {
         case "post":
             return "postId";
@@ -10,222 +13,155 @@ function getLikeField(entityType) {
         case "user":
         case "creator":
         case "museum":
-        case "exhibition":
             return "likedUserId";
         default:
             return null;
     }
-}
-export const toggleLikeEntity = async (req, res) => {
+};
+/**
+ * Перемикає лайк (додає або видаляє) для вказаної сутності
+ */
+export const toggleLikeEntity = async (req, res, next) => {
     try {
-        console.log("=> toggleLikeEntity called");
-        console.log("Request body data:", req.body);
-        // Ensure user is authenticated
-        if (!req.user?.id) {
-            console.error("User not authenticated.");
-            return res.status(401).json({ error: "User not authenticated" });
-        }
+        const userId = req.user.id; // AuthRequest гарантує, що user є
         const { entityId, entityType } = req.body;
-        const entityIdInt = parseInt(entityId, 10);
-        const userId = req.user.id;
-        console.log("User ID:", userId);
-        console.log("Entity ID (parsed):", entityIdInt);
-        console.log("Entity type:", entityType);
+        const idNum = parseInt(entityId, 10);
         const field = getLikeField(entityType);
-        if (!field || !entityIdInt) {
-            return res.status(400).json({ error: "Invalid or missing parameters" });
+        if (!field || isNaN(idNum)) {
+            res.status(400).json({ error: "Invalid parameters" });
+            return;
         }
-        // Check if user already liked
-        const existingLike = await prisma.like.findFirst({
-            where: {
-                userId,
-                [field]: entityIdInt,
-            },
-        });
-        console.log("Existing like found? =>", Boolean(existingLike));
+        const whereClause = { userId, [field]: idNum };
+        const existing = await prisma.like.findFirst({ where: whereClause });
         let liked = false;
-        if (existingLike) {
-            // If already liked, remove it
-            console.log("Already liked, so unliking now...");
-            await prisma.like.delete({
-                where: { id: existingLike.id },
-            });
+        if (existing) {
+            await prisma.like.delete({ where: { id: existing.id } });
         }
         else {
-            // If not liked, create a new like
-            console.log("Not liked, creating new like...");
-            await prisma.like.create({
-                data: {
-                    userId,
-                    [field]: entityIdInt,
-                },
-            });
+            await prisma.like.create({ data: whereClause });
             liked = true;
         }
-        // Count the new total
-        const likeCount = await prisma.like.count({
-            where: { [field]: entityIdInt },
-        });
-        console.log("New likeCount:", likeCount);
-        return res.status(200).json({ liked, likeCount });
+        const likeCount = await prisma.like.count({ where: { [field]: idNum } });
+        res.status(200).json({ liked, likeCount });
     }
-    catch (error) {
-        console.error("Error toggling like:", error);
-        return res.status(500).json({ error: "Failed to toggle like" });
+    catch (err) {
+        console.error("Error toggling like:", err);
+        res.status(500).json({ error: "Failed to toggle like" });
     }
 };
-export const getLikeStatus = async (req, res) => {
+/**
+ * Повертає статус лайку (чи юзер лайкнув) та загальну кількість лайків
+ */
+export const getLikeStatus = async (req, res, next) => {
     try {
-        console.log("=> getLikeStatus called");
-        console.log("Request query params:", req.query);
-        // Since it's a GET request, read from req.query:
+        const userId = req.user?.id ?? null;
         const { entityId, entityType } = req.query;
-        const entityIdInt = parseInt(entityId, 10);
-        // If your route requires auth:
-        const userId = req.user?.id || null;
-        console.log("User ID:", userId);
-        console.log("Entity ID (parsed):", entityIdInt);
-        console.log("Entity type:", entityType);
+        const idNum = parseInt(entityId, 10);
         const field = getLikeField(entityType);
-        if (!field || !entityIdInt) {
-            return res.status(400).json({ error: "Invalid entity type" });
+        if (!field || isNaN(idNum)) {
+            res.status(400).json({ error: "Invalid parameters" });
+            return;
         }
-        const likeCount = await prisma.like.count({
-            where: { [field]: entityIdInt },
-        });
+        const likeCount = await prisma.like.count({ where: { [field]: idNum } });
         let liked = false;
-        if (userId) {
-            const existingLike = await prisma.like.findFirst({
-                where: {
-                    userId,
-                    [field]: entityIdInt,
-                },
-            });
-            liked = Boolean(existingLike);
+        if (userId !== null) {
+            liked = Boolean(await prisma.like.findFirst({
+                where: { userId, [field]: idNum },
+            }));
         }
-        console.log(`likeCount => ${likeCount}, userHasLiked => ${liked}`);
-        return res.status(200).json({ liked, likeCount });
+        res.status(200).json({ liked, likeCount });
     }
-    catch (error) {
-        console.error("Error fetching like status:", error);
-        return res.status(500).json({ error: "Failed to fetch like status" });
+    catch (err) {
+        console.error("Error fetching like status:", err);
+        res.status(500).json({ error: "Failed to fetch like status" });
     }
 };
-export const getLikeCount = async (req, res) => {
+/**
+ * Повертає лише кількість лайків для сутності
+ */
+export const getLikeCount = async (req, res, next) => {
     try {
-        console.log("=> getLikeCount called");
-        console.log("Request query params:", req.query);
-        // Since it's a GET request, read from req.query:
         const { entityId, entityType } = req.query;
-        const entityIdInt = parseInt(entityId, 10);
-        console.log("Entity ID (parsed):", entityIdInt);
-        console.log("Entity type:", entityType);
+        const idNum = parseInt(entityId, 10);
         const field = getLikeField(entityType);
-        if (!field || !entityIdInt) {
-            return res.status(400).json({ error: "Invalid or missing parameters" });
+        if (!field || isNaN(idNum)) {
+            res.status(400).json({ error: "Invalid parameters" });
+            return;
         }
-        const count = await prisma.like.count({
-            where: { [field]: entityIdInt },
-        });
-        console.log("likeCount =>", count);
-        return res.status(200).json({ likeCount: count });
+        const likeCount = await prisma.like.count({ where: { [field]: idNum } });
+        res.status(200).json({ likeCount });
     }
-    catch (error) {
-        console.error("Error fetching like count:", error);
-        return res.status(500).json({ error: "Failed to fetch like count" });
+    catch (err) {
+        console.error("Error fetching like count:", err);
+        res.status(500).json({ error: "Failed to fetch like count" });
     }
 };
-export const getTopLikedPosts = async (req, res) => {
+/**
+ * Топ-10 постів за кількістю лайків
+ */
+export const getTopLikedPosts = async (_req, res, next) => {
     try {
-        const topPosts = await prisma.post.findMany({
-            include: {
-                _count: {
-                    select: { likes: true }, // Count likes for each post
-                },
-            },
-            orderBy: {
-                likes: {
-                    _count: "desc", // Sort by like count in descending order
-                },
-            },
-            take: 10, // You can adjust the limit
+        const posts = await prisma.post.findMany({
+            include: { _count: { select: { likes: true } } },
+            orderBy: { likes: { _count: "desc" } },
+            take: 10,
         });
-        res.status(200).json(topPosts);
+        res.json(posts);
     }
-    catch (error) {
-        console.error("Error fetching top liked posts:", error);
+    catch (err) {
+        console.error("Error fetching top liked posts:", err);
         res.status(500).json({ error: "Failed to fetch top liked posts" });
     }
 };
-export const getTopLikedMuseums = async (req, res) => {
+/**
+ * Топ-10 музеїв за отриманими лайками
+ */
+export const getTopLikedMuseums = async (_req, res, next) => {
     try {
-        const topMUseums = await prisma.user.findMany({
-            where: {
-                role: "MUSEUM",
-            },
-            include: {
-                _count: {
-                    select: { likesReceived: true },
-                    // Count likes for each post
-                },
-            },
-            orderBy: {
-                likesReceived: {
-                    _count: "desc", // Sort by like count in descending order
-                },
-            },
-            take: 10, // You can adjust the limit
+        const museums = await prisma.user.findMany({
+            where: { role: "MUSEUM" },
+            include: { _count: { select: { likesReceived: true } } },
+            orderBy: { likesReceived: { _count: "desc" } },
+            take: 10,
         });
-        res.status(200).json(topMUseums);
+        res.json(museums);
     }
-    catch (error) {
-        console.error("Error fetching top liked museum:", error);
-        res.status(500).json({ error: "Failed to fetch top liked museum" });
+    catch (err) {
+        console.error("Error fetching top liked museums:", err);
+        res.status(500).json({ error: "Failed to fetch top liked museums" });
     }
 };
-export const getTopLikedExhibitions = async (req, res) => {
+/**
+ * Топ-10 виставок за лайками
+ */
+export const getTopLikedExhibitions = async (_req, res, next) => {
     try {
-        const topExhibitions = await prisma.exhibition.findMany({
-            include: {
-                images: true,
-                _count: {
-                    select: { likes: true }, // Count likes for each post
-                },
-            },
-            orderBy: {
-                likes: {
-                    _count: "desc", // Sort by like count in descending order
-                },
-            },
-            take: 10, // You can adjust the limit
+        const exhibitions = await prisma.exhibition.findMany({
+            include: { images: true, _count: { select: { likes: true } } },
+            orderBy: { likes: { _count: "desc" } },
+            take: 10,
         });
-        res.status(200).json(topExhibitions);
+        res.json(exhibitions);
     }
-    catch (error) {
-        console.error("Error fetching top liked posts:", error);
-        res.status(500).json({ error: "Failed to fetch top liked posts" });
+    catch (err) {
+        console.error("Error fetching top liked exhibitions:", err);
+        res.status(500).json({ error: "Failed to fetch top liked exhibitions" });
     }
 };
-export const getTopLikedPaintings = async (req, res) => {
+/**
+ * Топ-10 картин за лайками
+ */
+export const getTopLikedPaintings = async (_req, res, next) => {
     try {
-        const topPaintings = await prisma.product.findMany({
-            include: {
-                images: true,
-                _count: {
-                    select: { likes: true }, // Count likes for each post
-                },
-            },
-            orderBy: {
-                likes: {
-                    _count: "desc", // Sort by like count in descending order
-                },
-            },
-            take: 10, // You can adjust the limit
+        const paintings = await prisma.product.findMany({
+            include: { images: true, _count: { select: { likes: true } } },
+            orderBy: { likes: { _count: "desc" } },
+            take: 10,
         });
-        res.status(200).json(topPaintings);
+        res.json(paintings);
     }
-    catch (error) {
-        console.error("Error fetching top liked paintings:", error);
+    catch (err) {
+        console.error("Error fetching top liked paintings:", err);
         res.status(500).json({ error: "Failed to fetch top liked paintings" });
     }
 };

@@ -1,6 +1,6 @@
 import express from 'express';
 import { getArtTermsByLang, getLastArtTerms, getArtTermsByLetter, getPagesArtTerms, getArtTermById, } from '../controllers/artTermsController.js';
-import { authenticateToken, authorize } from '../middleware/index.js';
+import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 const router = express.Router();
 // Route to get all creators
 router.get('/letters/:lang', getArtTermsByLang);

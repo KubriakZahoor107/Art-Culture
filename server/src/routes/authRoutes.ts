@@ -2,7 +2,6 @@ import express from 'express';
 import { body } from 'express-validator';
 import {
   register,
-  registerUser,
   login,
   resetPassword,
   resetPasswordConfirm,
@@ -51,7 +50,6 @@ router.post(
       .isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters'),
   ],
-  registerUser
 );
 
 // Login Route

@@ -1,104 +1,114 @@
-import prisma from "../../prismaClient.js";
 import { body, validationResult } from "express-validator";
+import prisma from "../prismaClient.js";
 import authenticateToken from "../middleware/authMiddleware.js";
 import authorize from "../middleware/roleMIddleware.js";
+// Валідні стовпці та їх дефолтні напрями
+const validColumns = [
+    ["createdAt", "desc"],
+    ["title", "asc"],
+    // додайте інші стовпці за потреби
+];
+// GET /api/admin/users
 export const getAllAdminUsers = async (req, res, next) => {
     try {
+        // 1) Валідація запиту
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
-        let page = req.params.page ?? 1;
-        let pageSize = req.params.pageSize ?? 20;
-        let orderBy = req.params.orderBy ?? "createdAt";
-        let validColumns = [
-            ["createdAt", "desc"],
-            ["title", "asc"],
-            //["status", "asc"],
-        ];
-        if (!validColumns.some((col) => col[0] === orderBy)) {
-            return res.status(400).json({ error: "Invalid sort order" });
+        // 2) Пагінація
+        const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+        const rawPageSize = parseInt(req.query.pageSize || "20", 10);
+        const pageSize = Math.min(rawPageSize, 20);
+        // 3) Сортування
+        const orderBy = req.query.orderBy || validColumns[0][0];
+        if (!validColumns.some(([col]) => col === orderBy)) {
+            res.status(400).json({ error: "Invalid sort column" });
+            return;
         }
-        let orderDir = req.params.orderDir ?? validColumns.find((col) => col[0] === orderBy)[1];
-        page = parseInt(page);
-        pageSize = parseInt(pageSize);
-        if (pageSize > 20)
-            pageSize = 20;
-        if (page < 1)
-            page = 1;
-        const { authorId, status } = req.query;
-        const filter = authorId ? { authorId: parseInt(authorId) } : {};
-        const mainQuery = {
-            where: { status, ...filter }
-        };
-        const posts = await prisma.user.findMany({
-            ...mainQuery,
+        const [, defaultDir] = validColumns.find(([col]) => col === orderBy);
+        const orderDir = req.query.orderDir ?? defaultDir;
+        if (!["asc", "desc"].includes(orderDir)) {
+            res.status(400).json({ error: "Invalid sort direction" });
+            return;
+        }
+        // 4) Фільтр по authorId
+        const filter = {};
+        if (req.query.authorId) {
+            const authorIdNum = parseInt(req.query.authorId, 10);
+            if (!Number.isNaN(authorIdNum))
+                filter.authorId = authorIdNum;
+        }
+        // 5) Запит до БД
+        const users = await prisma.user.findMany({
+            where: filter,
             skip: (page - 1) * pageSize,
             take: pageSize,
             orderBy: { [orderBy]: orderDir },
         });
-        res.json({ data: posts });
+        // 6) Відповідь
+        res.json({ page, pageSize, data: users });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
 };
+// PUT /api/admin/users/:id/role
 export const updateUserRole = async (req, res, next) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
-        const userId = parseInt(req.params.id);
+        const userId = parseInt(req.params.id, 10);
         const { role } = req.body;
-        if (userId === req.user.id && role !== "ADMIN") {
-            return res
-                .status(400)
-                .json({ error: "Admin cannot change your own role" });
+        if (req.user?.id === userId && role !== "ADMIN") {
+            res.status(400).json({ error: "Admin cannot change your own role" });
+            return;
         }
-        const user = await prisma.user.update({
+        const updated = await prisma.user.update({
             where: { id: userId },
             data: { role },
             select: { id: true, email: true, role: true },
         });
-        res.json(user);
+        res.json(updated);
     }
     catch (error) {
         if (error.code === "P2025") {
-            return res.status(404).json({ error: "User not found" });
+            res.status(404).json({ error: "User not found" });
+            return;
         }
         next(error);
     }
 };
+// DELETE /api/admin/users/:id
 export const deleteUser = async (req, res, next) => {
     try {
-        const userId = parseInt(req.params.id);
-        if (userId === req.user.id) {
-            return res.status(400).json({ error: "Admin cannot delete own account" });
+        const userId = parseInt(req.params.id, 10);
+        if (req.user?.id === userId) {
+            res.status(400).json({ error: "Admin cannot delete own account" });
+            return;
         }
         await prisma.user.delete({ where: { id: userId } });
         res.json({ message: "User deleted successfully" });
     }
     catch (error) {
         if (error.code === "P2025") {
-            return res.status(404).json({ error: "User not found" });
+            res.status(404).json({ error: "User not found" });
+            return;
         }
         next(error);
     }
 };
+// Функція реєстрації маршрутів
 export const registerAdminUserRoutes = (router) => {
-    router.get("/users", authenticateToken, authorize("ADMIN"), [
-        body("page").isInt({ min: 1 }).optional(),
-        body("pageSize").isInt({ min: 10, max: 100 }).optional(),
-        body("orderBy").isIn(["createdAt", "title", "status"]).optional(),
-        body("orderDir").isIn(["asc", "desc"]).optional(),
-        //body("status").isIn(["APPROVED", "REJECTED"]).optional(),
-        body("authorId").isInt().optional(),
-    ], getAllAdminUsers);
-    router.put("/users/:id/role", authenticateToken, authorize("ADMIN"), [
-        body("role")
-            .isIn(["ADMIN", "USER", "MUSEUM", "CREATOR", "EDITOR"])
-            .withMessage("Invalid role"),
-    ], updateUserRole);
+    router.get("/users", authenticateToken, authorize("ADMIN"), 
+    // валідація query-параметрів
+    body("page").optional().isInt({ min: 1 }), body("pageSize").optional().isInt({ min: 1, max: 20 }), body("orderBy").optional().isIn(validColumns.map(([col]) => col)), body("orderDir").optional().isIn(["asc", "desc"]), body("authorId").optional().isInt(), getAllAdminUsers);
+    router.put("/users/:id/role", authenticateToken, authorize("ADMIN"), body("role")
+        .isIn(["ADMIN", "USER", "MUSEUM", "CREATOR", "EDITOR"])
+        .withMessage("Invalid role"), updateUserRole);
     router.delete("/users/:id", authenticateToken, authorize("ADMIN"), deleteUser);
 };

@@ -1,208 +1,182 @@
-import bcrypt from "bcrypt";
-import { validationResult } from "express-validator";
-import fs from "fs";
-import jwt from "jsonwebtoken";
-import path, { dirname } from "path";
-import { fileURLToPath } from "url";
-import prisma from "../../prismaClient.js";
-import generateToken from "../utils/generateToken.js";
-import logger from "../utils/logging.js";
-import sendEmail from "../utils/sendEmails.js";
+// server/src/controllers/authController.ts
+import bcrypt from 'bcrypt';
+import { validationResult } from 'express-validator';
+import fs from 'fs';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import jwt from 'jsonwebtoken';
+import prisma from '../prismaClient.js';
+import generateToken from '../utils/generateToken.js';
+import logger from '../utils/logging.js';
+import sendEmail from '../utils/sendEmails.js';
+import { applyMuseumFields } from '../utils/applyMuseumFields.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+/**
+ * Реєстрація нового користувача (або музею, якщо role === 'MUSEUM')
+ */
 export const register = async (req, res, next) => {
     try {
-        // Handle Validation Errors
+        // 1) Валідація
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
-        const { email, password, role, title, bio, country, city, street, house_number, postcode, lat, lon, } = req.body;
-        // Access the uploaded files paths
-        const profileImage = req.body.profileImagePath || null;
-        const museumLogo = req.body.museumLogoPath || null;
-        // Check if user exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: "User already exists" });
+        const { email, password, role = 'USER', title, bio, country, city, street, house_number, postcode, lat, lon, } = req.body;
+        // 2) Перевірка, чи вже є такий email
+        const cnt = await prisma.user.count({ where: { email } });
+        if (cnt > 0) {
+            res.status(400).json({ error: 'User already exists' });
+            return;
         }
-        // Hash password
+        // 3) Хешування пароля
         const hashedPassword = await bcrypt.hash(password, 10);
-        // Prepare user data
+        // 4) Формування даних для створення
         const userData = {
             email,
             password: hashedPassword,
-            images: profileImage,
-            role: role || "USER",
+            images: req.body.profileImagePath ?? null,
+            role,
             title,
             bio,
         };
-        // If role is MUSEUM, include address fields
-        if (role === "MUSEUM") {
-            userData.country = country || null;
-            userData.city = city || null;
-            userData.street = street || null;
-            userData.house_number = house_number || null;
-            userData.postcode = postcode || null;
-            userData.lat = lat ? parseFloat(lat) : null;
-            userData.lon = lon ? parseFloat(lon) : null;
+        // Якщо музей — додаємо додаткові поля
+        if (role === 'MUSEUM') {
+            applyMuseumFields(userData, {
+                country,
+                city,
+                street,
+                house_number,
+                postcode,
+                lat,
+                lon,
+            });
         }
-        // Create user
-        const user = await prisma.user.create({
-            data: userData,
-        });
-        logger.debug("User object after creation:", user);
-        const token = generateToken(user);
-        const { password: pwd, ...userWithoutPassword } = user;
-        logger.debug("Request body:", req.body);
-        logger.debug("Uploaded file:", req.file);
-        if (museumLogo && role === "MUSEUM") {
+        // 5) Створюємо користувача
+        const user = await prisma.user.create({ data: userData });
+        // 6) Якщо є логотип музею — додаємо його
+        if (role === 'MUSEUM' && req.body.museumLogoPath) {
             await prisma.museum_logo_images.create({
                 data: {
-                    imageUrl: museumLogo,
                     userId: user.id,
+                    imageUrl: req.body.museumLogoPath,
                 },
             });
         }
-        await sendEmail(user.email, "Підтвердження реестрації", `Дякуємо за реестрацію на проекті ArtPlayUkraine.`, `<p>Дякуємо за реестрацію на проекті ArtPlayUkraine.
-			<a href="${process.env.CLIENT_URL}">Перейти до сайту</a>
-			</p>`);
-        res.status(201).json({
-            token,
-            user: userWithoutPassword,
-            message: "user created successfully",
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-};
-// src/controllers/authController.js
-export const registerUser = async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        const { email, password } = req.body;
-        // Check if user exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: "User already exists" });
-        }
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-        // Create user with default role 'USER'
-        const user = await prisma.user.create({
-            data: { email, password: hashedPassword, role: "USER" },
-        });
-        logger.log("User object after self-registration:", user);
+        // 7) Відправка листа
+        await sendEmail(user.email, 'Підтвердження реєстрації', `Дякуємо за реєстрацію на ArtPlayUkraine.`, `<p>Дякуємо за реєстрацію на ArtPlayUkraine. <a href="${process.env.CLIENT_URL}">Перейти до сайту</a></p>`);
+        // 8) Генерація та відповідь з токеном
         const token = generateToken(user);
-        const { password: pwd, ...userWithoutPassword } = user;
-        res.status(201).json({
-            token,
-            user: userWithoutPassword,
-            message: "User created successfully",
-        });
+        const { password: _pwd, ...userWithoutPassword } = user;
+        res.status(201).json({ token, user: userWithoutPassword });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
 };
+/**
+ * Логін користувача
+ */
 export const login = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            res.status(400).json({ errors: errors.array() });
+            return;
         }
-        // Find user
+        const { email, password } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user)
-            return res.status(401).json({ error: "Invalid credentials" });
-        // Compare passwords
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword)
-            return res.status(401).json({ error: "Invalid credentials" });
-        logger.log("User object before token generation:", user);
-        // Generate token
+        if (!user) {
+            res.status(401).json({ error: 'Invalid credentials' });
+            return;
+        }
+        const matches = await bcrypt.compare(password, user.password);
+        if (!matches) {
+            res.status(401).json({ error: 'Invalid credentials' });
+            return;
+        }
         const token = generateToken(user);
-        const { password: pwd, ...userWithoutPassword } = user;
+        const { password: _pwd, ...userWithoutPassword } = user;
         res.json({ token, user: userWithoutPassword });
     }
-    catch (error) {
-        logger.error("Login error:", error);
-        next(error);
+    catch (err) {
+        logger.error('Login error:', err);
+        next(err);
     }
 };
+/**
+ * Запит на скидання пароля — генерує токен і шле на email
+ */
 export const resetPassword = async (req, res, next) => {
     try {
         const { email } = req.body;
-        // Find user
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user)
-            return res.status(404).json({ error: "User not found" });
-        // Generate reset token
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
         const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-            expiresIn: "1h",
+            expiresIn: '1h',
         });
-        // Update user with reset token and expiry
         await prisma.user.update({
             where: { email },
             data: {
                 resetToken,
-                resetTokenExpiry: new Date(Date.now() + 3600000), // 1 hour
+                resetTokenExpiry: new Date(Date.now() + 3600000),
             },
         });
-        // Send reset email
-        const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-        await sendEmail(user.email, "Password Reset Request", `Click the link to reset your password: ${resetLink}`, `Click the link to reset your password: ${resetLink}`);
-        res.json({ message: "Password reset link sent to email" });
+        const link = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+        await sendEmail(user.email, 'Password Reset Request', `Click to reset your password: ${link}`, `Click to reset your password: ${link}`);
+        res.json({ message: 'Password reset link sent to email' });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
 };
+/**
+ * Підтвердження скидання — встановлює новий пароль
+ */
 export const resetPasswordConfirm = async (req, res, next) => {
     try {
         const { token } = req.params;
         const { newPassword } = req.body;
-        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.id;
-        // Find user
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user)
-            return res.status(404).json({ error: "User not found" });
-        // Check if token matches and is not expired
-        if (user.resetToken !== token || user.resetTokenExpiry < new Date()) {
-            return res.status(400).json({ error: "Invalid or expired token" });
+        const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
         }
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        // Update password and remove reset token
+        if (user.resetToken !== token ||
+            (user.resetTokenExpiry?.getTime() ?? 0) < Date.now()) {
+            res.status(400).json({ error: 'Invalid or expired token' });
+            return;
+        }
+        const hashed = await bcrypt.hash(newPassword, 10);
         await prisma.user.update({
-            where: { id: userId },
-            data: {
-                password: hashedPassword,
-                resetToken: null,
-                resetTokenExpiry: null,
-            },
+            where: { id: decoded.id },
+            data: { password: hashed, resetToken: null, resetTokenExpiry: null },
         });
-        res.json({ message: "Password reset successful" });
+        res.json({ message: 'Password reset successful' });
     }
-    catch (error) {
-        if (error.name === "JsonWebTokenError") {
-            return res.status(400).json({ error: "Invalid token" });
+    catch (err) {
+        if (err.name === 'JsonWebTokenError') {
+            res.status(400).json({ error: 'Invalid token' });
+            return;
         }
-        next(error);
+        next(err);
     }
 };
+/**
+ * Отримати дані поточного користувача
+ */
 export const getCurrentUser = async (req, res, next) => {
     try {
-        const userId = req.user.id;
-        if (!userId)
-            return res.status(401).json({ error: "Unauthorized" });
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ error: 'Unauthorized' });
+            return;
+        }
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -213,7 +187,6 @@ export const getCurrentUser = async (req, res, next) => {
                 bio: true,
                 images: true,
                 country: true,
-                state: true,
                 city: true,
                 street: true,
                 house_number: true,
@@ -222,108 +195,89 @@ export const getCurrentUser = async (req, res, next) => {
                 lon: true,
                 createdAt: true,
                 updatedAt: true,
-                museum_logo_image: {
-                    select: {
-                        imageUrl: true,
-                    },
-                },
+                museum_logo_image: { select: { imageUrl: true } },
             },
         });
-        if (!user)
-            return res.status(404).json({ error: "User not found" });
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
         res.json({ user });
     }
-    catch (error) {
-        next(error);
+    catch (err) {
+        next(err);
     }
 };
+/**
+ * Оновлення профілю користувача (та логотипу музею, якщо є)
+ */
 export const updateUserProfile = async (req, res, next) => {
     try {
-        const { title, bio, country, state, city, street, house_number, postcode, lat, lon, } = req.body;
-        logger.log("Received update data:", {
-            title,
-            bio,
-            country,
-            city,
-            street,
-            house_number,
-            postcode,
-            lat,
-            lon,
+        const { title, bio, country, city, street, house_number, postcode, lat, lon, } = req.body;
+        const existing = await prisma.user.findUnique({
+            where: { id: req.user.id },
         });
-        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
+        if (!existing) {
+            res.status(404).json({ error: 'User not found' });
+            return;
         }
-        let profileImage = user.images;
+        let images = existing.images;
         if (req.body.profileImagePath) {
-            profileImage = req.body.profileImagePath;
-            if (user.images) {
-                const oldImagePath = path.join(__dirname, "../../", user.images);
-                try {
-                    await fs.promises.unlink(oldImagePath);
-                    logger.log("Old image deleted successfully: ${oldImagePath}");
-                }
-                catch (err) {
-                    if (err.code !== "ENOENT") {
-                        logger.error("Failed to delete old image:", err);
-                    }
-                }
+            const oldPath = path.join(__dirname, '../../', existing.images ?? '');
+            images = req.body.profileImagePath;
+            try {
+                await fs.promises.unlink(oldPath);
+                logger.info(`Old image deleted: ${oldPath}`);
+            }
+            catch (e) {
+                if (e.code !== 'ENOENT')
+                    logger.error('Failed to delete old image:', e);
             }
         }
         const updateData = {
-            title: title || req.user.title,
-            bio: bio || req.user.bio,
-            images: profileImage,
+            title: title ?? existing.title,
+            bio: bio ?? existing.bio,
+            images,
         };
-        if (req.user.role === "MUSEUM") {
-            updateData.country = country || req.user.country;
-            updateData.city = city || req.user.city;
-            updateData.street = street || req.user.street;
-            updateData.house_number = house_number || req.user.house_number;
-            updateData.postcode = postcode || req.user.postcode;
-            updateData.lat = lat ? parseFloat(lat) : req.user.lat;
-            updateData.lon = lon ? parseFloat(lon) : req.user.lon;
-        }
-        // Handle museum logo
-        if (req.body.museumLogoPath && user.role === "MUSEUM") {
-            const existingLogo = await prisma.museum_logo_images.findUnique({
-                where: { userId: user.id },
+        if (existing.role === 'MUSEUM') {
+            applyMuseumFields(updateData, {
+                country,
+                city,
+                street,
+                house_number,
+                postcode,
+                lat,
+                lon,
             });
-            if (existingLogo) {
-                // Update existing logo
+        }
+        // Оновлення або створення логотипу музею
+        if (req.body.museumLogoPath && existing.role === 'MUSEUM') {
+            const logoRec = await prisma.museum_logo_images.findUnique({
+                where: { userId: existing.id },
+            });
+            if (logoRec) {
                 await prisma.museum_logo_images.update({
-                    where: { userId: user.id },
-                    data: {
-                        imageUrl: req.body.museumLogoPath,
-                    },
+                    where: { userId: existing.id },
+                    data: { imageUrl: req.body.museumLogoPath },
                 });
-                // Delete old logo file
-                const oldLogoPath = path.join(__dirname, "../../", existingLogo.imageUrl);
+                const oldLogo = path.join(__dirname, '../../', logoRec.imageUrl);
                 try {
-                    await fs.promises.unlink(oldLogoPath);
-                    logger.log(`Old museum logo deleted successfully: ${oldLogoPath}`);
+                    await fs.promises.unlink(oldLogo);
+                    logger.info(`Old museum logo deleted: ${oldLogo}`);
                 }
-                catch (err) {
-                    if (err.code !== "ENOENT") {
-                        logger.error("Failed to delete old museum logo:", err);
-                    }
+                catch (e) {
+                    if (e.code !== 'ENOENT')
+                        logger.error('Failed to delete old logo:', e);
                 }
             }
             else {
-                // Create new logo entry
                 await prisma.museum_logo_images.create({
-                    data: {
-                        imageUrl: req.body.museumLogoPath,
-                        userId: user.id,
-                    },
+                    data: { userId: existing.id, imageUrl: req.body.museumLogoPath },
                 });
             }
         }
-        const updateUserProfile = await prisma.user.update({
-            where: {
-                id: user.id,
-            },
+        const updated = await prisma.user.update({
+            where: { id: existing.id },
             data: updateData,
             select: {
                 id: true,
@@ -337,24 +291,17 @@ export const updateUserProfile = async (req, res, next) => {
                 street: true,
                 house_number: true,
                 postcode: true,
-                museum_logo_image: {
-                    select: {
-                        imageUrl: true,
-                    },
-                },
                 lat: true,
                 lon: true,
                 createdAt: true,
                 updatedAt: true,
+                museum_logo_image: { select: { imageUrl: true } },
             },
         });
-        res.json({
-            user: updateUserProfile,
-            message: "Profile updated successfully",
-        });
+        res.json({ user: updated, message: 'Profile updated successfully' });
     }
-    catch (error) {
-        logger.error("Error updating user profile:", error);
-        next(error);
+    catch (err) {
+        logger.error('Error updating user profile:', err);
+        next(err);
     }
 };

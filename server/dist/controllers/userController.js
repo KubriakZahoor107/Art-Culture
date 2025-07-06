@@ -1,5 +1,5 @@
 // src/controllers/userController.js
-import prisma from "../../prismaClient.js";
+import prisma from "../prismaClient.js";
 import logger from "../utils/logging.js";
 // src/controllers/userController.js
 export const getCreatorsByLanguage = async (req, res, next) => {
