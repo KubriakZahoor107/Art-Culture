@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --ext ts --exec \"TS_NODE_TRANSPILE_ONLY=1 node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts\"",
+    "dev": "ts-node --esm src/index.ts",
+    "dev:watch": "nodemon --watch src --ext ts --exec \"npm run dev\"",
     "prisma": "prisma",
     "lint": "eslint src --ext .js,.ts,.jsx,.tsx,.cjs,.mjs",
     "format": "prettier --write .",
