@@ -69,6 +69,10 @@ app.use('/api/search', searchRoutes);
 app.use('/api/geo', geoRoutes);
 app.use('/api/like', likeRoutes);
 
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'OK' });
+});
+
 // Обробник помилок наприкінці
 app.use(errorHandler);
 

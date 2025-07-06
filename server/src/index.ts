@@ -32,8 +32,6 @@ async function main(): Promise<void> {
         }
 }
 
-main();
-
 // Глобальні обробники помилок ще до старту
 process.on('unhandledRejection', (reason) => {
         console.error('❌ Unhandled Rejection:', reason);
