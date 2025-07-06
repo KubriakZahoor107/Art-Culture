@@ -1,83 +1,48 @@
-import express from "express"
-import { body } from "express-validator"
+// server/src/routes/postRoutes.ts
+import express from 'express';
 import {
   createPost,
   deletePost,
   getAllPosts,
-  getAuthorsPosts,
-  getCreatorsPosts,
-  getExhibitionsPost,
-  getMuseumsPost,
-  getPostByExhibitionId,
   getPostById,
-  getPostByMuseumId,
+  updatePost,
+  getCreatorsPosts,
+  getAuthorsPosts,
+  getExhibitionsPosts,
+  getMuseumsPosts,
   getPostsByAuthorId,
-  updatePost,
+  getPostByExhibitionId,
+  getPostByMuseumId,
   upload,
-} from "../controllers/postController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
-import { logPostActions } from "../middleware/postMiddleware.js"
+} from '../controllers/postController.js';
+import authenticateToken from '../middleware/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-// Create a new post
-router.post(
-  "/",
-  authenticateToken,
-  logPostActions,
-  upload.single("images"),
-  [
-    body("title_en").notEmpty().withMessage("Title is required"),
-    body("content_en").notEmpty().withMessage("Content is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
-    body("content_uk").notEmpty().withMessage("Потрібен опис"),
-  ],
-  createPost,
-)
+// CREATE POST
+router.post('/', authenticateToken, upload.single('image'), createPost);
 
-// Get post by Creator
-router.get("/creators", getCreatorsPosts)
+// GET ALL APPROVED POSTS (optional filter by authorId)
+router.get('/', getAllPosts);
 
-router.get("/creator/:authorId", getPostsByAuthorId)
+// GET POST BY ID
+router.get('/:id', getPostById);
 
-router.get("/authors", getAuthorsPosts)
+// UPDATE POST
+router.put('/:id', authenticateToken, upload.single('image'), updatePost);
 
-router.get("/author/:authorId", getPostsByAuthorId)
+// DELETE POST
+router.delete('/:id', authenticateToken, deletePost);
 
-router.get("/exhibitions", getExhibitionsPost)
+// GET POSTS BY ROLE
+router.get('/creators', getCreatorsPosts);
+router.get('/authors', getAuthorsPosts);
+router.get('/exhibitions', getExhibitionsPosts);
+router.get('/museums', getMuseumsPosts);
 
-router.get("/exhibitions/by-author/:authorId", getPostsByAuthorId)
+// GET POSTS BY ENTITY ID
+router.get('/by-author/:authorId', getPostsByAuthorId);
+router.get('/by-exhibition/:exhibitionId', getPostByExhibitionId);
+router.get('/by-museum/:museumId', getPostByMuseumId);
 
-router.get("/exhibitions/:id", getPostByExhibitionId)
-
-router.get("/museums", getMuseumsPost)
-
-// Get posts by museum author
-router.get("/museum/by-author/:authorId", getPostsByAuthorId)
-
-router.get("/museum/:museumId", getPostByMuseumId)
-
-// Get all posts
-router.get("/", getAllPosts)
-
-// Get a single post by ID
-router.get("/:id", getPostById)
-
-// Update a post
-router.put(
-  "/:id",
-  authenticateToken,
-  upload.single("images"),
-  [
-    body("title_en").notEmpty().withMessage("Title is required"),
-    body("content_en").notEmpty().withMessage("Content is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
-    body("content_uk").notEmpty().withMessage("Потрібен опис"),
-  ],
-  updatePost,
-)
-
-// Delete a post
-router.delete("/:id", authenticateToken, deletePost)
-
-export default router
+export default router;
