@@ -8,8 +8,8 @@ import {
   updatePost,
   getCreatorsPosts,
   getAuthorsPosts,
-  getExhibitionsPosts,
-  getMuseumsPosts,
+  getExhibitionsPost,
+  getMuseumsPost,
   getPostsByAuthorId,
   getPostByExhibitionId,
   getPostByMuseumId,
@@ -37,8 +37,8 @@ router.delete('/:id', authenticateToken, deletePost);
 // GET POSTS BY ROLE
 router.get('/creators', getCreatorsPosts);
 router.get('/authors', getAuthorsPosts);
-router.get('/exhibitions', getExhibitionsPosts);
-router.get('/museums', getMuseumsPosts);
+router.get('/exhibitions', getExhibitionsPost);
+router.get('/museums', getMuseumsPost);
 
 // GET POSTS BY ENTITY ID
 router.get('/by-author/:authorId', getPostsByAuthorId);
