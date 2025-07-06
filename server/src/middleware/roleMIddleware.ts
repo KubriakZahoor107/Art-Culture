@@ -1,5 +1,8 @@
-const role = (...roles) => {
-	return (req, res, next) => {
+import { Request, Response, NextFunction } from 'express'
+import { AuthRequest } from './authMiddleware.js'
+
+const role = (...roles: string[]) => {
+        return (req: AuthRequest, res: Response, next: NextFunction): void => {
 		if (!req.user) {
 			console.error('No user found on request')
 			return res.status(401).json({ error: 'Unauthorized' })

@@ -1,15 +1,20 @@
 // exhibitionImageUploader.js
-import multer from "multer"
+import multer, { FileFilterCallback, StorageEngine } from "multer"
 import path, { dirname } from "path"
 import sharp from "sharp"
 import { fileURLToPath } from "url"
+import { Request, Response, NextFunction } from "express"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const storage = multer.memoryStorage() // Store files in memory
+const storage: StorageEngine = multer.memoryStorage() // Store files in memory
 // Define the fileFilter function
-const fileFilter = (req, file, cb) => {
+const fileFilter = (
+  req: Request,
+  file: Express.Multer.File,
+  cb: FileFilterCallback
+) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/
   const extname = allowedTypes.test(
     path.extname(file.originalname).toLowerCase(),
@@ -32,7 +37,11 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit
 })
 
-const processImages = async (req, res, next) => {
+const processImages = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   if (!req.files) return next()
   try {
     await Promise.all(

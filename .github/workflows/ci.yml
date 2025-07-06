@@ -13,10 +13,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - name: Install dependencies
         run: npm install --legacy-peer-deps --prefix server
-      - name: Lint
-        run: npm run lint --prefix server
+      - name: Prisma migrate
+        run: npx prisma migrate deploy --schema server/prisma/schema.prisma
+      - name: Prisma generate
+        run: npx prisma generate --schema server/prisma/schema.prisma
       - name: Test
         run: npm test --prefix server
+      - name: Lint
+        run: npm run lint --prefix server
