@@ -10,7 +10,6 @@
     "strict": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "experimentalSpecifierResolution": "node",
     "moduleSuffixes": [
       ".js",
       ".ts"
