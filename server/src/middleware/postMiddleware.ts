@@ -1,7 +1,11 @@
-// src/middleware/postMiddleware.js
-
 // Example: Logging middleware for post actions
-export const logPostActions = (req, res, next) => {
+import { Request, Response, NextFunction } from 'express'
+
+export const logPostActions = (
+  req: Request & { user?: { id: number } },
+  res: Response,
+  next: NextFunction
+) => {
 	console.log(
 		`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} by User ID: ${req.user.id}`
 	)

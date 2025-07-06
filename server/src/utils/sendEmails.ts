@@ -1,8 +1,14 @@
 import nodemailer from 'nodemailer'
+import { Transporter } from 'nodemailer'
 
-const sendEmail = async (to, subject, text, html) => {
-	// Configure transporter
-	const transporter = nodemailer.createTransport({
+const sendEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  html: string
+) => {
+        // Configure transporter
+        const transporter: Transporter = nodemailer.createTransport({
 		service: 'Gmail', // Use your email service
 		host: 'smtp.gmail.com',
 		port: 587,
@@ -23,7 +29,7 @@ const sendEmail = async (to, subject, text, html) => {
 	}
 
 	// Send email
-	await transporter.sendMail(mailOptions)
+        await transporter.sendMail(mailOptions)
 }
 
 export default sendEmail

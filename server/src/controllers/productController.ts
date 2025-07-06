@@ -3,10 +3,16 @@ import { validationResult } from "express-validator"
 import fs from "fs"
 import path, { dirname } from "path"
 import { fileURLToPath } from "url"
+import { Request, Response, NextFunction } from "express"
+import { AuthRequest } from "../middleware/authMiddleware.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-export const createProduct = async (req, res, next) => {
+export const createProduct = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -21,7 +27,7 @@ export const createProduct = async (req, res, next) => {
       specs_en,
       specs_uk,
       size,
-      dateofcreation,
+      dateOfCreation,
       style_en,
       style_uk,
       technique_en,
@@ -44,7 +50,7 @@ export const createProduct = async (req, res, next) => {
         specs_en,
         specs_uk,
         size,
-        dateofcreation,
+        dateOfCreation,
         style_en,
         style_uk,
         technique_en,
@@ -66,7 +72,11 @@ export const createProduct = async (req, res, next) => {
     next(error)
   }
 }
-export const getProducts = async (req, res, next) => {
+export const getProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { authorIds } = req.query // Expecting 'authorIds=1,2,3'
 
@@ -121,7 +131,11 @@ export const getProducts = async (req, res, next) => {
   }
 }
 
-export const getProductById = async (req, res, next) => {
+export const getProductById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const productId = parseInt(req.params.productId, 10)
     if (isNaN(productId)) {
@@ -153,7 +167,11 @@ export const getProductById = async (req, res, next) => {
   }
 }
 
-export const getUserProducts = async (req, res, next) => {
+export const getUserProducts = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const userId = req.user.id
 
@@ -182,7 +200,11 @@ export const getUserProducts = async (req, res, next) => {
   }
 }
 
-export const getCreatorProducts = async (req, res, next) => {
+export const getCreatorProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -212,7 +234,11 @@ export const getCreatorProducts = async (req, res, next) => {
   }
 }
 
-export const getProductByAuthorId = async (req, res, next) => {
+export const getProductByAuthorId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authorId = parseInt(req.params.authorId, 10)
     if (isNaN(authorId)) {
@@ -248,7 +274,11 @@ export const getProductByAuthorId = async (req, res, next) => {
   }
 }
 
-export const getMuseumProducts = async (req, res, next) => {
+export const getMuseumProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -278,7 +308,11 @@ export const getMuseumProducts = async (req, res, next) => {
   }
 }
 
-export const getProductByMuseumId = async (req, res, next) => {
+export const getProductByMuseumId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const museumId = parseInt(req.params.museumId, 10)
     if (isNaN(museumId)) {
@@ -314,7 +348,11 @@ export const getProductByMuseumId = async (req, res, next) => {
   }
 }
 
-export const updateProduct = async (req, res, next) => {
+export const updateProduct = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params
     const {
@@ -325,7 +363,7 @@ export const updateProduct = async (req, res, next) => {
       specs_en,
       specs_uk,
       size,
-      dateofcreation,
+      dateOfCreation,
       style_en,
       style_uk,
       technique_en,
@@ -371,7 +409,7 @@ export const updateProduct = async (req, res, next) => {
         specs_en,
         specs_uk,
         size,
-        dateofcreation,
+        dateOfCreation,
         style_en,
         style_uk,
         technique_en,
@@ -395,7 +433,11 @@ export const updateProduct = async (req, res, next) => {
   }
 }
 
-export const deleteProduct = async (req, res, next) => {
+export const deleteProduct = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params
     const userId = req.user.id
@@ -436,7 +478,11 @@ export const deleteProduct = async (req, res, next) => {
   }
 }
 
-export const getProductByExhibitionId = async (req, res, next) => {
+export const getProductByExhibitionId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const exhibitionId = parseInt(req.params.exhibitionId, 10)
     if (isNaN(exhibitionId)) {

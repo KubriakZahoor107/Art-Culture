@@ -38,10 +38,12 @@ model User {
   images       String?
   title        String?
   bio          String?
+  resetToken       String?    @map("reset_token")
+  resetTokenExpiry DateTime?  @map("reset_token_expiry")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   country      String?
-  house_number String?
+  houseNumber String? @map("house_number")
   lat          Float?
   lon          Float?
   postcode     String?
@@ -200,7 +202,7 @@ model MuseumLogoImage {
   id       Int    @id @default(autoincrement())
   imageUrl String
 
-  userId Int  @unique
+  userId Int  @unique @map("user_id")
   user   User @relation("UserMuseumLogo", fields: [userId], references: [id])
 
   @@map("museum_logo_images")

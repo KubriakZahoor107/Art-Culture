@@ -85,7 +85,7 @@ export const register = async (
 
     // 6) Якщо є логотип музею — додаємо його
     if (role === 'MUSEUM' && req.body.museumLogoPath) {
-      await prisma.museum_logo_images.create({
+      await prisma.museumLogoImage.create({
         data: {
           userId: user.id,
           imageUrl: req.body.museumLogoPath,
@@ -339,11 +339,11 @@ export const updateUserProfile = async (
 
     // Оновлення або створення логотипу музею
     if (req.body.museumLogoPath && existing.role === 'MUSEUM') {
-      const logoRec = await prisma.museum_logo_images.findUnique({
+      const logoRec = await prisma.museumLogoImage.findUnique({
         where: { userId: existing.id },
       })
       if (logoRec) {
-        await prisma.museum_logo_images.update({
+        await prisma.museumLogoImage.update({
           where: { userId: existing.id },
           data: { imageUrl: req.body.museumLogoPath },
         })
@@ -355,7 +355,7 @@ export const updateUserProfile = async (
           if (e.code !== 'ENOENT') logger.error('Failed to delete old logo:', e)
         }
       } else {
-        await prisma.museum_logo_images.create({
+        await prisma.museumLogoImage.create({
           data: { userId: existing.id, imageUrl: req.body.museumLogoPath },
         })
       }
