@@ -22,7 +22,8 @@ const storage = multer.diskStorage({
 });
 function fileFilter(req, file, cb) {
     const allowed = /\.(jpe?g|png|gif|webp)$/i;
-    if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
+    if (allowed.test(path.extname(file.originalname)) &&
+        allowed.test(file.mimetype)) {
         cb(null, true);
     }
     else {
@@ -39,9 +40,6 @@ export const upload = multer({
 // ————————————————
 export const createPost = async (req, res, next) => {
     try {
-        // валідація express-validator, якщо є
-        // const errors = validationResult(req);
-        // ...
         const { title_en, title_uk, content_en, content_uk } = req.body;
         const userId = req.user.id;
         let imageUrl = null;
@@ -85,6 +83,9 @@ export const getAllPosts = async (_req, res, next) => {
         res.json(posts);
     }
     catch (err) {
+        if (err.code === 'P2021') {
+            return res.json([]);
+        }
         next(err);
     }
 };
@@ -183,7 +184,7 @@ export const deletePost = async (req, res, next) => {
 // ————————————————
 // GET POSTS BY ROLE
 // ————————————————
-function makeRoleFinder(role) {
+export function makeRoleFinder(role) {
     return async (_req, res, next) => {
         try {
             const posts = await prisma.post.findMany({
@@ -194,6 +195,9 @@ function makeRoleFinder(role) {
             res.json({ posts });
         }
         catch (err) {
+            if (err.code === "P2021") {
+                return res.json({ posts: [] });
+            }
             logger.error(`Error fetching ${role} posts:`, err);
             next(err);
         }
@@ -201,12 +205,12 @@ function makeRoleFinder(role) {
 }
 export const getCreatorsPosts = makeRoleFinder("CREATOR");
 export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
-export const getMuseumsPost = makeRoleFinder("MUSEUM");
+export const getExhibitionsPosts = makeRoleFinder("EXHIBITION"); // <-- зверни увагу на s
+export const getMuseumsPosts = makeRoleFinder("MUSEUM"); // <-- зверни увагу на s
 // ————————————————
 // GET POSTS BY ENTITY ID
 // ————————————————
-function makeByAuthorId(param) {
+export function makeByAuthorId(param) {
     return async (req, res, next) => {
         try {
             const id = parseInt(req.params[param], 10);
@@ -215,21 +219,22 @@ function makeByAuthorId(param) {
                 return;
             }
             const posts = await prisma.post.findMany({
-                where: { authorId: id },
-                include: { author: { select: { id: true, email: true, title: true, role: true } } },
+                where: { [param]: id },
+                include: {
+                    author: { select: { id: true, email: true, title: true, role: true } },
+                },
                 orderBy: { createdAt: "desc" },
             });
-            if (posts.length === 0) {
-                res.status(404).json({ error: "Posts not found" });
-                return;
-            }
             res.json({ posts });
         }
         catch (err) {
+            if (err.code === "P2021") {
+                return res.json({ posts: [] });
+            }
             next(err);
         }
     };
 }
 export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostByMuseumId = makeByAuthorId("museumId");
+export const getPostsByExhibitionId = makeByAuthorId("exhibitionId");
+export const getPostsByMuseumId = makeByAuthorId("museumId");

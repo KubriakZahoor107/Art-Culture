@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { register, registerUser, login, resetPassword, resetPasswordConfirm, getCurrentUser, updateUserProfile } from '../controllers/authController.js';
+import { register, login, resetPassword, resetPasswordConfirm, getCurrentUser, updateUserProfile } from '../controllers/authController.js';
 import authenticateToken from '../middleware/authMiddleware.js';
 import authorize from '../middleware/roleMIddleware.js';
 import { uploadProfileLogoImages, processProfileLogoImages } from '../middleware/uploadProfileLogoImages.js';
@@ -29,7 +29,7 @@ router.post('/signup', authenticateToken, authorize('ADMIN'), [
     body('password')
         .isLength({ min: 6 })
         .withMessage('Password must be at least 6 characters'),
-], registerUser);
+]);
 // Login Route
 router.post('/login', login);
 // Password reset request

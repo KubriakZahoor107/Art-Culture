@@ -6,7 +6,7 @@ const rateLimit = rateLimitPkg.default ?? rateLimitPkg;
 import cors from 'cors';
 import morgan from 'morgan';
 import errorHandler from './middleware/errorHandler.js';
-import authRoutes from "./routes/authRoutes.js";
+import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import postRoutes from './routes/postRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -17,8 +17,8 @@ import searchRoutes from './routes/searchRoutes.js';
 import geoRoutes from './routes/geoRoutes.js';
 import likeRoutes from './routes/likeRoutes.js';
 const app = express();
-// Базові middleware
-app.set('trust proxy', true);
+// Вимикаємо trust proxy, щоб уникнути помилок rate-limit
+app.set('trust proxy', false);
 app.use(express.json());
 app.use(helmet({
     contentSecurityPolicy: {
@@ -38,6 +38,8 @@ app.use(cors({
     credentials: true
 }));
 app.use(rateLimit({
+    // явно вимикаємо trustProxy для express-rate-limit
+    trustProxy: false,
     windowMs: 2_000,
     max: 10_000,
     message: 'Too many requests, try again later.'
@@ -46,6 +48,10 @@ app.use(morgan('combined'));
 app.use((req, res, next) => {
     console.info(`[${req.method}] ${req.originalUrl}`);
     next();
+});
+// Health-check endpoint
+app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'OK' });
 });
 // Маршрути
 app.use('/api/auth', authRoutes);
@@ -58,6 +64,10 @@ app.use('/api/art-terms', artTermsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/geo', geoRoutes);
 app.use('/api/like', likeRoutes);
+app.get('/health', (_req, res) => {
+    res.json({ status: 'OK' });
+});
 // Обробник помилок наприкінці
+// Обробник помилок
 app.use(errorHandler);
 export default app;
