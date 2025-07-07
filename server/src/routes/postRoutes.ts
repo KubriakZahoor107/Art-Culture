@@ -8,13 +8,14 @@ import {
   updatePost,
   getCreatorsPosts,
   getAuthorsPosts,
-  getExhibitionsPost,
-  getMuseumsPost,
+  getExhibitionsPosts,   // ⟵ зверни увагу на s
+  getMuseumsPosts,        // ⟵ зверни увагу на s
   getPostsByAuthorId,
-  getPostByExhibitionId,
-  getPostByMuseumId,
+  getPostsByExhibitionId,
+  getPostsByMuseumId,
   upload,
 } from '../controllers/postController.js';
+
 import authenticateToken from '../middleware/authMiddleware.js';
 
 const router = express.Router();

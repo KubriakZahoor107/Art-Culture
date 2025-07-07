@@ -1,4 +1,5 @@
 // server/src/controllers/postController.ts
+
 import { Request, Response, NextFunction } from "express";
 import multer, { FileFilterCallback } from "multer";
 import fs from "fs";
@@ -24,20 +25,21 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
-
 function fileFilter(
   req: Request,
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) {
   const allowed = /\.(jpe?g|png|gif|webp)$/i;
-  if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
+  if (
+    allowed.test(path.extname(file.originalname)) &&
+    allowed.test(file.mimetype)
+  ) {
     cb(null, true);
   } else {
     cb(new Error("Only images are allowed"));
   }
 }
-
 export const upload = multer({
   storage,
   fileFilter,
@@ -223,7 +225,9 @@ export const deletePost = async (
 // ————————————————
 // GET POSTS BY ROLE
 // ————————————————
-export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSEUM') {
+export function makeRoleFinder(
+  role: "CREATOR" | "AUTHOR" | "EXHIBITION" | "MUSEUM"
+) {
   return async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const posts = await prisma.post.findMany({
@@ -233,7 +237,7 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
       });
       res.json({ posts });
     } catch (err: any) {
-      if (err.code === 'P2021') {
+      if (err.code === "P2021") {
         return res.json({ posts: [] });
       }
       logger.error(`Error fetching ${role} posts:`, err);
@@ -244,13 +248,15 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
 
 export const getCreatorsPosts = makeRoleFinder("CREATOR");
 export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
-export const getMuseumsPost = makeRoleFinder("MUSEUM");
+export const getExhibitionsPosts = makeRoleFinder("EXHIBITION");  // <-- зверни увагу на s
+export const getMuseumsPosts = makeRoleFinder("MUSEUM");         // <-- зверни увагу на s
 
-// ———————————————
+// ————————————————
 // GET POSTS BY ENTITY ID
-// ———————————————
-export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") {
+// ————————————————
+export function makeByAuthorId(
+  param: "authorId" | "exhibitionId" | "museumId"
+) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseInt(req.params[param], 10);
@@ -260,7 +266,9 @@ export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") 
       }
       const posts = await prisma.post.findMany({
         where: { [param]: id } as any,
-        include: { author: { select: { id: true, email: true, title: true, role: true } } },
+        include: {
+          author: { select: { id: true, email: true, title: true, role: true } },
+        },
         orderBy: { createdAt: "desc" },
       });
       res.json({ posts });
@@ -274,6 +282,5 @@ export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") 
 }
 
 export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostByMuseumId = makeByAuthorId("museumId");
-
+export const getPostsByExhibitionId = makeByAuthorId("exhibitionId");
+export const getPostsByMuseumId = makeByAuthorId("museumId");

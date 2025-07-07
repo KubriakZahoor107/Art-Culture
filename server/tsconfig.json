@@ -1,17 +1,31 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "outDir": "dist",
-    "isolatedModules": true
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules"],
-  "ts-node": { "esm": true, "experimentalSpecifierResolution": "node" }
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "allowJs": true, // Щоб ts-node міг обробляти .js у тестах
+        "isolatedModules": true, // Вимога для ts-jest з ESM
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "outDir": "dist",
+        "types": [
+            "node",
+            "jest"
+        ] // Підтримка типів Jest у тестах
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.js" // Щоб не падали тести .js (якщо їх ще є)
+    ],
+    "exclude": [
+        "dist",
+        "node_modules"
+    ],
+    "ts-node": {
+        "esm": true,
+        "experimentalSpecifierResolution": "node"
+    }
 }
