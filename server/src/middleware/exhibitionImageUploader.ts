@@ -42,7 +42,7 @@ const processImages = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.files) return next()
+  if (!Array.isArray(req.files)) return next()
   try {
     await Promise.all(
       req.files.map(async (file) => {

@@ -16,7 +16,8 @@ export async function createProduct(
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() })
+      res.status(400).json({ errors: errors.array() })
+      return
     }
 
     const {
@@ -37,9 +38,11 @@ export async function createProduct(
 
     console.log("reg.user", req.user)
 
-    const images = req.files.map((file) => ({
-      imageUrl: `../../uploads/productImages/${file.filename}`,
-    }))
+    const images = Array.isArray(req.files)
+      ? req.files.map((file) => ({
+          imageUrl: `../../uploads/productImages/${file.filename}`,
+        }))
+      : []
 
     const product = await prisma.product.create({
       data: {
@@ -93,7 +96,8 @@ export async function getProducts(
 
       // Validate that all IDs are numbers
       if (authorIdArray.some(isNaN)) {
-        return res.status(400).json({ error: "Invalid authorIds" })
+        res.status(400).json({ error: "Invalid authorIds" })
+        return
       }
 
       products = await prisma.product.findMany({
@@ -145,7 +149,8 @@ export async function getProductById(
   try {
     const productId = parseInt(req.params.productId, 10)
     if (isNaN(productId)) {
-      return res.status(400).json({ error: "Invalid product ID" })
+      res.status(400).json({ error: "Invalid product ID" })
+      return
     }
 
     const product = await prisma.product.findUnique({
@@ -163,7 +168,8 @@ export async function getProductById(
     })
 
     if (!product) {
-      return res.status(404).json({ error: "Product not found" })
+      res.status(404).json({ error: "Product not found" })
+      return
     }
 
     res.json({ product })
@@ -248,7 +254,8 @@ export async function getProductByAuthorId(
   try {
     const authorId = parseInt(req.params.authorId, 10)
     if (isNaN(authorId)) {
-      return res.status(400).json({ error: "invalid product id" })
+      res.status(400).json({ error: "invalid product id" })
+      return
     }
     const products = await prisma.product.findMany({
       where: {
@@ -270,7 +277,8 @@ export async function getProductByAuthorId(
     })
 
     if (!products || products.length === 0) {
-      return res.status(404).json({ error: "Products not found" })
+      res.status(404).json({ error: "Products not found" })
+      return
     }
 
     res.json({ products }) // Wrap products in an object
@@ -322,7 +330,8 @@ export async function getProductByMuseumId(
   try {
     const museumId = parseInt(req.params.museumId, 10)
     if (isNaN(museumId)) {
-      return res.status(400).json({ error: "invalid product id" })
+      res.status(400).json({ error: "invalid product id" })
+      return
     }
 
     const products = await prisma.product.findMany({
@@ -344,7 +353,8 @@ export async function getProductByMuseumId(
       },
     })
     if (!products || products.length === 0) {
-      return res.status(404).json({ error: "Products not found" })
+      res.status(404).json({ error: "Products not found" })
+      return
     }
 
     res.json({ products }) // Wrap products in an object
@@ -384,12 +394,17 @@ export async function updateProduct(
       },
       include: { images: true },
     })
-    if (!product) return res.status(404).json({ error: "Paintings not found" })
-    if (product.authorId !== userId)
-      return res.status(403).json({ error: "Unauthorized" })
+    if (!product) {
+      res.status(404).json({ error: "Paintings not found" })
+      return
+    }
+    if (product.authorId !== userId) {
+      res.status(403).json({ error: "Unauthorized" })
+      return
+    }
 
     let imagesData = []
-    if (req.files && req.files.length > 0) {
+    if (Array.isArray(req.files) && req.files.length > 0) {
       for (let img of product.images) {
         const oldImagePath = path.join(__dirname, `../../${img.imageUrl}`)
         try {
@@ -455,9 +470,14 @@ export async function deleteProduct(
       },
       include: { images: true },
     })
-    if (!product) return res.status(404).json({ error: "Product not found" })
-    if (product.authorId !== userId)
-      return res.status(403).json({ error: "Unauthorized" })
+    if (!product) {
+      res.status(404).json({ error: "Product not found" })
+      return
+    }
+    if (product.authorId !== userId) {
+      res.status(403).json({ error: "Unauthorized" })
+      return
+    }
 
     for (let img of product.images) {
       const imagePath = path.join(__dirname, `../../${img.imageUrl}`)
@@ -492,7 +512,8 @@ export async function getProductByExhibitionId(
   try {
     const exhibitionId = parseInt(req.params.exhibitionId, 10)
     if (isNaN(exhibitionId)) {
-      return res.status(400).json({ error: "Invalid exhibition ID" })
+      res.status(400).json({ error: "Invalid exhibition ID" })
+      return
     }
 
     const exhibition = await prisma.exhibition.findUnique({
@@ -513,7 +534,8 @@ export async function getProductByExhibitionId(
     })
     console.log("Exhibition and products data:", exhibition)
     if (!exhibition) {
-      return res.status(404).json({ error: "Exhibition not found" })
+      res.status(404).json({ error: "Exhibition not found" })
+      return
     }
 
     const products = exhibition.products.map((ep) => ep.product)
