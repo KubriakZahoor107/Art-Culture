@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../prismaClient";
+import prisma from "../prismaClient.js";
 import { Role } from "@prisma/client";
 // 1) Розширюємо Express.Request, додаючи необов’язкове поле user
 export interface AuthRequest extends Request {
