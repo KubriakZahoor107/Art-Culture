@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express"
-import prisma from "../prismaClient.js"
+import prisma from "../prismaClient"
 export async function searchAuthors(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const query = req.query.q || ""
+    const query = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q ?? ""
 
     const authors = await prisma.user.findMany({
       where: {
@@ -38,7 +38,7 @@ export async function searchPainting(
   next: NextFunction
 ): Promise<void> {
   try {
-    const query = req.query.q || ""
+    const query = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q ?? ""
     const authorId = req.params.authorId
       ? parseInt(req.params.authorId, 10)
       : null
@@ -85,7 +85,7 @@ export async function searchMuseum(
   next: NextFunction
 ): Promise<void> {
   try {
-    const query = req.query.q || ""
+    const query = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q ?? ""
 
     const museums = await prisma.user.findMany({
       where: {
@@ -127,7 +127,7 @@ export async function searchAll(
   next: NextFunction
 ): Promise<void> {
   try {
-    const query = req.query.q || ""
+    const query = Array.isArray(req.query.q) ? req.query.q[0] : req.query.q ?? ""
 
     // Search for authors (fixing the typo: "contains" instead of "contain")
     const searchAllAuthors = await prisma.user.findMany({

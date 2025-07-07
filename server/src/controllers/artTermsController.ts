@@ -1,6 +1,6 @@
 // server/src/controllers/artTermsController.ts
 import { Request, Response, NextFunction } from 'express'
-import prisma from '../prismaClient.js'
+import prisma from '../prismaClient'
 import { validationResult } from 'express-validator'
 
 interface Term {

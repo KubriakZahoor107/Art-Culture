@@ -1,8 +1,8 @@
 // src/controllers/userController.js
 
 import { Request, Response, NextFunction } from "express"
-import prisma from "../prismaClient.js"
-import logger from "../utils/logging.js"
+import prisma from "../prismaClient"
+import logger from "../utils/logging"
 
 // src/controllers/userController.js
 
@@ -20,7 +20,8 @@ export async function getCreatorsByLanguage(
   // Validate language
   if (!["uk", "en"].includes(language)) {
     logger.warn(`Invalid language parameter: ${language}`)
-    return res.status(400).json({ error: "invalid language" })
+    res.status(400).json({ error: "invalid language" })
+    return
   }
 
   let titleField = "title"
@@ -78,7 +79,8 @@ export async function getMuseumsByLanguage(
   // Validate language
   if (!["uk", "en"].includes(language)) {
     logger.warn(`Invalid language parameter: ${language}`)
-    return res.status(400).json({ error: "invalid language" })
+    res.status(400).json({ error: "invalid language" })
+    return
   }
 
   let titleField = "title"
@@ -158,7 +160,8 @@ export async function getCreatorById(
   try {
     const creatorId = parseInt(req.params.id, 10)
     if (isNaN(creatorId)) {
-      return res.status(400).json({ error: "invalid creator id" })
+      res.status(400).json({ error: "invalid creator id" })
+      return
     }
 
     const creator = await prisma.user.findUnique({
@@ -174,7 +177,8 @@ export async function getCreatorById(
     })
 
     if (!creator || creator.role !== "CREATOR") {
-      return res.status(404).json({ error: "Creator not found" })
+      res.status(404).json({ error: "Creator not found" })
+      return
     }
     res.json({ creator })
   } catch (error) {
@@ -197,7 +201,8 @@ export async function getAuthorsByLanguage(
   //* Validate language
   if (!["uk", "en"].includes(language)) {
     logger.warn(`Invalid language parameter: ${language}`)
-    return res.status(400).json({ error: "invalid language" })
+    res.status(400).json({ error: "invalid language" })
+    return
   }
 
   let titleField = "title"
@@ -276,7 +281,8 @@ export async function getAuthorById(
   try {
     const authorId = parseInt(req.params.id, 10)
     if (isNaN(authorId)) {
-      return res.status(400).json({ error: "invalid author id" })
+      res.status(400).json({ error: "invalid author id" })
+      return
     }
 
     const author = await prisma.user.findUnique({
@@ -292,7 +298,8 @@ export async function getAuthorById(
     })
 
     if (!author || author.role !== "AUTHOR") {
-      return res.status(404).json({ error: "Author not found" })
+      res.status(404).json({ error: "Author not found" })
+      return
     }
     res.json({ author })
   } catch (error) {
@@ -348,7 +355,8 @@ export async function getMuseumById(
   try {
     const museumId = parseInt(req.params.id, 10)
     if (isNaN(museumId)) {
-      return res.status(400).json({ error: "invalid museum id" })
+      res.status(400).json({ error: "invalid museum id" })
+      return
     }
 
     const museum = await prisma.user.findUnique({
@@ -365,7 +373,8 @@ export async function getMuseumById(
     })
 
     if (!museum || museum.role !== "MUSEUM") {
-      return res.status(404).json({ error: "Museum not found" })
+      res.status(404).json({ error: "Museum not found" })
+      return
     }
     res.json({ museum })
   } catch (error) {
@@ -410,7 +419,8 @@ export async function getExhibitionById(
   try {
     const exhibitionId = parseInt(req.params.id, 10)
     if (isNaN(exhibitionId)) {
-      return res.status(400).json({ error: "invalid exhibition id" })
+      res.status(400).json({ error: "invalid exhibition id" })
+      return
     }
 
     const exhibition = await prisma.user.findUnique({
@@ -426,7 +436,8 @@ export async function getExhibitionById(
     })
 
     if (!exhibition || exhibition.role !== "EXHIBITION") {
-      return res.status(404).json({ error: "Exhibition not found" })
+      res.status(404).json({ error: "Exhibition not found" })
+      return
     }
     res.json({ exhibition })
   } catch (error) {

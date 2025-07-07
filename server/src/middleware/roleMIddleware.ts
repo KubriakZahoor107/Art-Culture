@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { AuthRequest } from './authMiddleware.js'
+import { AuthRequest } from './authMiddleware'
 
 const role = (...roles: string[]) => {
         return (req: AuthRequest, res: Response, next: NextFunction): void => {

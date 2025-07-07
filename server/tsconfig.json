@@ -17,7 +17,8 @@
         ] // Підтримка типів Jest у тестах
     },
     "include": [
-        "src/**/*.{ts,js}"
+        "src/**/*.ts",
+        "src/**/*.js"
     ],
     "exclude": [
         "dist",

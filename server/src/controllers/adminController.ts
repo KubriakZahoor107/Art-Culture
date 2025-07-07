@@ -1,7 +1,7 @@
 // server/src/controllers/adminController.ts
 import { Response, NextFunction } from "express";
-import prisma from "../prismaClient.js";
-import { AuthRequest } from "../middleware/authMiddleware.js";
+import prisma from "../prismaClient";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 export async function getAllUsers(
   req: AuthRequest,

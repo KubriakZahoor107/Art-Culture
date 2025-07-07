@@ -7,11 +7,11 @@ import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import jwt from 'jsonwebtoken'
 
-import prisma from '../prismaClient.js'
-import generateToken from '../utils/generateToken.js'
-import logger from '../utils/logging.js'
-import sendEmail from '../utils/sendEmails.js'
-import { applyMuseumFields } from '../utils/applyMuseumFields.js'
+import prisma from '../prismaClient'
+import generateToken from '../utils/generateToken'
+import logger from '../utils/logging'
+import sendEmail from '../utils/sendEmails'
+import { applyMuseumFields } from '../utils/applyMuseumFields'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

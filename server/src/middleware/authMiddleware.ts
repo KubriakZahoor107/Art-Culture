@@ -1,15 +1,15 @@
 // File: server/src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../prismaClient.js";
+import prisma from "../prismaClient";
+import { Role } from "@prisma/client";
 
 // 1) Розширюємо Express.Request, додаючи необов’язкове поле user
 export interface AuthRequest extends Request {
   user?: {
     id: number;
-    email: string;
-    role: string;
-    // …інші ваші поля…
+    role: Role;
+    images?: string;
   };
 }
 
