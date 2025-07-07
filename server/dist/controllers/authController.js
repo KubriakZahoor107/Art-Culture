@@ -119,13 +119,6 @@ export const resetPassword = async (req, res, next) => {
         const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
             expiresIn: '1h',
         });
-        await prisma.user.update({
-            where: { email },
-            data: {
-                resetToken,
-                resetTokenExpiry: new Date(Date.now() + 3600000),
-            },
-        });
         const link = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
         await sendEmail(user.email, 'Password Reset Request', `Click to reset your password: ${link}`, `Click to reset your password: ${link}`);
         res.json({ message: 'Password reset link sent to email' });
@@ -147,15 +140,10 @@ export const resetPasswordConfirm = async (req, res, next) => {
             res.status(404).json({ error: 'User not found' });
             return;
         }
-        if (user.resetToken !== token ||
-            (user.resetTokenExpiry?.getTime() ?? 0) < Date.now()) {
-            res.status(400).json({ error: 'Invalid or expired token' });
-            return;
-        }
         const hashed = await bcrypt.hash(newPassword, 10);
         await prisma.user.update({
             where: { id: decoded.id },
-            data: { password: hashed, resetToken: null, resetTokenExpiry: null },
+            data: { password: hashed },
         });
         res.json({ message: 'Password reset successful' });
     }
@@ -195,7 +183,7 @@ export const getCurrentUser = async (req, res, next) => {
                 lon: true,
                 createdAt: true,
                 updatedAt: true,
-                museum_logo_image: { select: { imageUrl: true } },
+                museumLogoImage: { select: { imageUrl: true } },
             },
         });
         if (!user) {
@@ -295,7 +283,7 @@ export const updateUserProfile = async (req, res, next) => {
                 lon: true,
                 createdAt: true,
                 updatedAt: true,
-                museum_logo_image: { select: { imageUrl: true } },
+                museumLogoImage: { select: { imageUrl: true } },
             },
         });
         res.json({ user: updated, message: 'Profile updated successfully' });

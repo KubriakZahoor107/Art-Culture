@@ -2,7 +2,7 @@
 import prisma from "../prismaClient.js";
 import logger from "../utils/logging.js";
 // src/controllers/userController.js
-export const getCreatorsByLanguage = async (req, res, next) => {
+export async function getCreatorsByLanguage(req, res, next) {
     const { language } = req.params;
     const { letter } = req.query;
     // Log incoming request parameters
@@ -48,8 +48,8 @@ export const getCreatorsByLanguage = async (req, res, next) => {
         logger.error("Error fetching creators by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
-};
-export const getMuseumsByLanguage = async (req, res, next) => {
+}
+export async function getMuseumsByLanguage(req, res, next) {
     const { language } = req.params;
     const { letter } = req.query;
     // Log incoming request parameters
@@ -95,8 +95,8 @@ export const getMuseumsByLanguage = async (req, res, next) => {
         logger.error("Error fetching museums by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
-};
-export const getCreators = async (req, res, next) => {
+}
+export async function getCreators(req, res, next) {
     try {
         const creators = await prisma.user.findMany({
             where: {
@@ -118,8 +118,8 @@ export const getCreators = async (req, res, next) => {
         logger.error("Error fetching creators:", error);
         next(error);
     }
-};
-export const getCreatorById = async (req, res, next) => {
+}
+export async function getCreatorById(req, res, next) {
     try {
         const creatorId = parseInt(req.params.id, 10);
         if (isNaN(creatorId)) {
@@ -145,8 +145,8 @@ export const getCreatorById = async (req, res, next) => {
         logger.error("Error fetch data creator id", error);
         next(error);
     }
-};
-export const getAuthorsByLanguage = async (req, res, next) => {
+}
+export async function getAuthorsByLanguage(req, res, next) {
     const { language } = req.params;
     const { letter } = req.query;
     //* Log incoming request parameters
@@ -192,8 +192,8 @@ export const getAuthorsByLanguage = async (req, res, next) => {
         logger.error("Error fetching creators by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
-};
-export const getAuthors = async (req, res, next) => {
+}
+export async function getAuthors(req, res, next) {
     try {
         const authors = await prisma.user.findMany({
             where: {
@@ -215,8 +215,8 @@ export const getAuthors = async (req, res, next) => {
         logger.error("Error fetching authors:", error);
         next(error);
     }
-};
-export const getAuthorById = async (req, res, next) => {
+}
+export async function getAuthorById(req, res, next) {
     try {
         const authorId = parseInt(req.params.id, 10);
         if (isNaN(authorId)) {
@@ -242,8 +242,8 @@ export const getAuthorById = async (req, res, next) => {
         logger.error("Error fetch data author id", error);
         next(error);
     }
-};
-export const getMuseums = async (req, res, next) => {
+}
+export async function getMuseums(req, res, next) {
     try {
         const museums = await prisma.user.findMany({
             where: {
@@ -264,7 +264,7 @@ export const getMuseums = async (req, res, next) => {
                 street: true,
                 house_number: true,
                 postcode: true,
-                museum_logo_image: {
+                museumLogoImage: {
                     select: {
                         imageUrl: true,
                     },
@@ -277,8 +277,8 @@ export const getMuseums = async (req, res, next) => {
         logger.error("Error fetching museums:", error);
         next(error);
     }
-};
-export const getMuseumById = async (req, res, next) => {
+}
+export async function getMuseumById(req, res, next) {
     try {
         const museumId = parseInt(req.params.id, 10);
         if (isNaN(museumId)) {
@@ -287,7 +287,7 @@ export const getMuseumById = async (req, res, next) => {
         const museum = await prisma.user.findUnique({
             where: { id: museumId },
             include: {
-                museum_logo_image: true,
+                museumLogoImage: true,
                 products: {
                     include: {
                         images: true,
@@ -305,8 +305,8 @@ export const getMuseumById = async (req, res, next) => {
         logger.error("Error fetch data creator id", error);
         next(error);
     }
-};
-export const getExhibitions = async (req, res, next) => {
+}
+export async function getExhibitions(req, res, next) {
     try {
         const exhibition = await prisma.user.findMany({
             where: {
@@ -328,8 +328,8 @@ export const getExhibitions = async (req, res, next) => {
         logger.error("Error fetching exhibitions:", error);
         next(error);
     }
-};
-export const getExhibitionById = async (req, res, next) => {
+}
+export async function getExhibitionById(req, res, next) {
     try {
         const exhibitionId = parseInt(req.params.id, 10);
         if (isNaN(exhibitionId)) {
@@ -355,4 +355,4 @@ export const getExhibitionById = async (req, res, next) => {
         logger.error("Error fetch data creator id", error);
         next(error);
     }
-};
+}

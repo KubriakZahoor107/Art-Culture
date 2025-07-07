@@ -5,7 +5,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-export const createProduct = async (req, res, next) => {
+export async function createProduct(req, res, next) {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -47,13 +47,18 @@ export const createProduct = async (req, res, next) => {
         console.error("Error creating product:", error);
         next(error);
     }
-};
-export const getProducts = async (req, res, next) => {
+}
+export async function getProducts(req, res, next) {
     try {
         const { authorIds } = req.query; // Expecting 'authorIds=1,2,3'
         let products;
         if (authorIds) {
-            const authorIdArray = authorIds.split(",").map((id) => parseInt(id, 10));
+            const ids = typeof authorIds === "string"
+                ? authorIds.split(",")
+                : Array.isArray(authorIds)
+                    ? authorIds
+                    : [];
+            const authorIdArray = ids.map((id) => parseInt(id, 10));
             // Validate that all IDs are numbers
             if (authorIdArray.some(isNaN)) {
                 return res.status(400).json({ error: "Invalid authorIds" });
@@ -98,8 +103,8 @@ export const getProducts = async (req, res, next) => {
         console.error("Error fetching products:", error);
         next(error);
     }
-};
-export const getProductById = async (req, res, next) => {
+}
+export async function getProductById(req, res, next) {
     try {
         const productId = parseInt(req.params.productId, 10);
         if (isNaN(productId)) {
@@ -127,8 +132,8 @@ export const getProductById = async (req, res, next) => {
         console.error("Error fetching product by ID:", error);
         next(error);
     }
-};
-export const getUserProducts = async (req, res, next) => {
+}
+export async function getUserProducts(req, res, next) {
     try {
         const userId = req.user.id;
         console.log("getUserProducts - req.user:", req.user);
@@ -153,8 +158,8 @@ export const getUserProducts = async (req, res, next) => {
         console.error("Error fetching user products:", error);
         next(error);
     }
-};
-export const getCreatorProducts = async (req, res, next) => {
+}
+export async function getCreatorProducts(req, res, next) {
     try {
         const products = await prisma.product.findMany({
             where: {
@@ -183,8 +188,8 @@ export const getCreatorProducts = async (req, res, next) => {
         console.error("Error fetching creator products", error);
         next(error);
     }
-};
-export const getProductByAuthorId = async (req, res, next) => {
+}
+export async function getProductByAuthorId(req, res, next) {
     try {
         const authorId = parseInt(req.params.authorId, 10);
         if (isNaN(authorId)) {
@@ -217,8 +222,8 @@ export const getProductByAuthorId = async (req, res, next) => {
         console.error("Error fetching products by author ID:", error);
         next(error);
     }
-};
-export const getMuseumProducts = async (req, res, next) => {
+}
+export async function getMuseumProducts(req, res, next) {
     try {
         const products = await prisma.product.findMany({
             where: {
@@ -247,8 +252,8 @@ export const getMuseumProducts = async (req, res, next) => {
         console.error("Error fetching museum products", error);
         next(error);
     }
-};
-export const getProductByMuseumId = async (req, res, next) => {
+}
+export async function getProductByMuseumId(req, res, next) {
     try {
         const museumId = parseInt(req.params.museumId, 10);
         if (isNaN(museumId)) {
@@ -281,8 +286,8 @@ export const getProductByMuseumId = async (req, res, next) => {
         console.error("Error fetching products by museum ID:", error);
         next(error);
     }
-};
-export const updateProduct = async (req, res, next) => {
+}
+export async function updateProduct(req, res, next) {
     try {
         const { id } = req.params;
         const { title_en, title_uk, description_en, description_uk, specs_en, specs_uk, size, dateOfCreation, style_en, style_uk, technique_en, technique_uk, } = req.body;
@@ -347,8 +352,8 @@ export const updateProduct = async (req, res, next) => {
         console.error("Error updating product:", error);
         next(error);
     }
-};
-export const deleteProduct = async (req, res, next) => {
+}
+export async function deleteProduct(req, res, next) {
     try {
         const { id } = req.params;
         const userId = req.user.id;
@@ -387,8 +392,8 @@ export const deleteProduct = async (req, res, next) => {
         console.error("Error deleting product:", error);
         next(error);
     }
-};
-export const getProductByExhibitionId = async (req, res, next) => {
+}
+export async function getProductByExhibitionId(req, res, next) {
     try {
         const exhibitionId = parseInt(req.params.exhibitionId, 10);
         if (isNaN(exhibitionId)) {
@@ -421,4 +426,4 @@ export const getProductByExhibitionId = async (req, res, next) => {
         console.error("Error fetching product by ID:", error);
         next(error);
     }
-};
+}

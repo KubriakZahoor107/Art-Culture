@@ -11,11 +11,6 @@ export const getArtTermsByLang = async (req, res, next) => {
             : { title_en: 'asc' };
         const artTerms = await prisma.artTerm.findMany({
             orderBy,
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
         });
         // Підготуємо масив термінів із літерою
         const terms = artTerms.map(term => ({
@@ -23,7 +18,6 @@ export const getArtTermsByLang = async (req, res, next) => {
             letter: (lang === 'uk' ? term.title_uk : term.title_en)[0],
             title: lang === 'uk' ? term.title_uk : term.title_en,
             description: lang === 'uk' ? term.description_uk : term.description_en,
-            highlightedProduct: term.highlightedProduct,
         }));
         // Вибираємо перший термін кожної літери
         const firstTerms = [];
@@ -47,11 +41,6 @@ export const getLastArtTerms = async (req, res, next) => {
             lang = 'uk';
         const artTerms = await prisma.artTerm.findMany({
             orderBy: { createdAt: 'desc' },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
             take: 15,
         });
         res.json({ artTerms });
@@ -80,11 +69,6 @@ export const getArtTermsByLetter = async (req, res, next) => {
             orderBy: letter === 'uk'
                 ? { title_uk: 'asc' }
                 : { title_en: 'asc' },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
         });
         res.json({ artTerms });
     }
@@ -103,11 +87,6 @@ export const getArtTermById = async (req, res, next) => {
         }
         const artTerm = await prisma.artTerm.findFirstOrThrow({
             where: { id },
-            include: {
-                highlightedProduct: {
-                    include: { author: true, images: true },
-                },
-            },
         });
         res.json({ artTerm });
     }

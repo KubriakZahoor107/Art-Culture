@@ -1,5 +1,5 @@
 import prisma from "../prismaClient.js";
-export const searchAuthors = async (req, res, next) => {
+export async function searchAuthors(req, res, next) {
     try {
         const query = req.query.q || "";
         const authors = await prisma.user.findMany({
@@ -25,8 +25,8 @@ export const searchAuthors = async (req, res, next) => {
         console.error("Error searching for authors:", error);
         next(error);
     }
-};
-export const searchPainting = async (req, res, next) => {
+}
+export async function searchPainting(req, res, next) {
     try {
         const query = req.query.q || "";
         const authorId = req.params.authorId
@@ -66,8 +66,8 @@ export const searchPainting = async (req, res, next) => {
         console.error("Error searching for paintings:", error);
         next(error);
     }
-};
-export const searchMuseum = async (req, res, next) => {
+}
+export async function searchMuseum(req, res, next) {
     try {
         const query = req.query.q || "";
         const museums = await prisma.user.findMany({
@@ -102,9 +102,9 @@ export const searchMuseum = async (req, res, next) => {
         console.error("Error searching for museums:", error);
         next(error);
     }
-};
+}
 // controllers/searchController.js
-export const searchAll = async (req, res, next) => {
+export async function searchAll(req, res, next) {
     try {
         const query = req.query.q || "";
         // Search for authors (fixing the typo: "contains" instead of "contain")
@@ -177,7 +177,7 @@ export const searchAll = async (req, res, next) => {
                 images: true,
                 museum: {
                     include: {
-                        museum_logo_image: true,
+                        museumLogoImage: true,
                     },
                 },
                 createdBy: {
@@ -208,4 +208,4 @@ export const searchAll = async (req, res, next) => {
         console.error("error in searchAll", error);
         next(error);
     }
-};
+}

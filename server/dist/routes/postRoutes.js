@@ -1,7 +1,6 @@
 // server/src/routes/postRoutes.ts
 import express from 'express';
-import { createPost, deletePost, getAllPosts, getPostById, updatePost, getCreatorsPosts, getAuthorsPosts, // ⟵ зверни увагу на s
-getPostsByAuthorId, upload, } from '../controllers/postController.js';
+import { createPost, deletePost, getAllPosts, getPostById, updatePost, getCreatorsPosts, getAuthorsPosts, getExhibitionsPosts, getMuseumsPosts, getPostsByAuthorId, getPostsByExhibitionId, getPostsByMuseumId, upload, } from '../controllers/postController.js';
 import authenticateToken from '../middleware/authMiddleware.js';
 const router = express.Router();
 // CREATE POST
@@ -17,10 +16,10 @@ router.delete('/:id', authenticateToken, deletePost);
 // GET POSTS BY ROLE
 router.get('/creators', getCreatorsPosts);
 router.get('/authors', getAuthorsPosts);
-router.get('/exhibitions', getExhibitionsPost);
-router.get('/museums', getMuseumsPost);
+router.get('/exhibitions', getExhibitionsPosts);
+router.get('/museums', getMuseumsPosts);
 // GET POSTS BY ENTITY ID
 router.get('/by-author/:authorId', getPostsByAuthorId);
-router.get('/by-exhibition/:exhibitionId', getPostByExhibitionId);
-router.get('/by-museum/:museumId', getPostByMuseumId);
+router.get('/by-exhibition/:exhibitionId', getPostsByExhibitionId);
+router.get('/by-museum/:museumId', getPostsByMuseumId);
 export default router;
