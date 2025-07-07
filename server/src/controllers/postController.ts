@@ -246,10 +246,37 @@ export function makeRoleFinder(
   };
 }
 
-export const getCreatorsPosts = makeRoleFinder("CREATOR");
-export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPosts = makeRoleFinder("EXHIBITION");  // <-- зверни увагу на s
-export const getMuseumsPosts = makeRoleFinder("MUSEUM");         // <-- зверни увагу на s
+export async function getCreatorsPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeRoleFinder("CREATOR")(req, res, next);
+}
+
+export async function getAuthorsPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeRoleFinder("AUTHOR")(req, res, next);
+}
+
+export async function getExhibitionsPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeRoleFinder("EXHIBITION")(req, res, next);
+}
+
+export async function getMuseumsPosts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeRoleFinder("MUSEUM")(req, res, next);
+}
 
 // ————————————————
 // GET POSTS BY ENTITY ID
@@ -281,6 +308,26 @@ export function makeByAuthorId(
   };
 }
 
-export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostsByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostsByMuseumId = makeByAuthorId("museumId");
+export async function getPostsByAuthorId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeByAuthorId("authorId")(req, res, next);
+}
+
+export async function getPostsByExhibitionId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeByAuthorId("exhibitionId")(req, res, next);
+}
+
+export async function getPostsByMuseumId(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  return makeByAuthorId("museumId")(req, res, next);
+}

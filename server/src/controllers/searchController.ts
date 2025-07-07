@@ -1,5 +1,10 @@
+import { Request, Response, NextFunction } from "express"
 import prisma from "../prismaClient.js"
-export const searchAuthors = async (req, res, next) => {
+export async function searchAuthors(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const query = req.query.q || ""
 
@@ -27,7 +32,11 @@ export const searchAuthors = async (req, res, next) => {
   }
 }
 
-export const searchPainting = async (req, res, next) => {
+export async function searchPainting(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const query = req.query.q || ""
     const authorId = req.params.authorId
@@ -70,7 +79,11 @@ export const searchPainting = async (req, res, next) => {
   }
 }
 
-export const searchMuseum = async (req, res, next) => {
+export async function searchMuseum(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const query = req.query.q || ""
 
@@ -108,7 +121,11 @@ export const searchMuseum = async (req, res, next) => {
 }
 
 // controllers/searchController.js
-export const searchAll = async (req, res, next) => {
+export async function searchAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const query = req.query.q || ""
 
@@ -185,7 +202,7 @@ export const searchAll = async (req, res, next) => {
         images: true,
         museum: {
           include: {
-            museum_logo_image: true,
+            museumLogoImage: true,
           },
         },
         createdBy: {

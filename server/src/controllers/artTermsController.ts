@@ -8,7 +8,6 @@ interface Term {
     letter: string
     title: string
     description: string
-    highlightedProduct: unknown
 }
 
 // GET /api/art-terms/:lang
@@ -27,11 +26,6 @@ export const getArtTermsByLang = async (
 
         const artTerms = await prisma.artTerm.findMany({
             orderBy,
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
         })
 
         // Підготуємо масив термінів із літерою
@@ -40,7 +34,6 @@ export const getArtTermsByLang = async (
             letter: (lang === 'uk' ? term.title_uk : term.title_en)[0],
             title: lang === 'uk' ? term.title_uk : term.title_en,
             description: lang === 'uk' ? term.description_uk : term.description_en,
-            highlightedProduct: term.highlightedProduct,
         }))
 
         // Вибираємо перший термін кожної літери
@@ -69,11 +62,6 @@ export const getLastArtTerms = async (
 
         const artTerms = await prisma.artTerm.findMany({
             orderBy: { createdAt: 'desc' },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
             take: 15,
         })
 
@@ -109,11 +97,6 @@ export const getArtTermsByLetter = async (
                 letter === 'uk'
                     ? { title_uk: 'asc' as const }
                     : { title_en: 'asc' as const },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
         })
 
         res.json({ artTerms })
@@ -138,11 +121,6 @@ export const getArtTermById = async (
 
         const artTerm = await prisma.artTerm.findFirstOrThrow({
             where: { id },
-            include: {
-                highlightedProduct: {
-                    include: { author: true, images: true },
-                },
-            },
         })
 
         res.json({ artTerm })
