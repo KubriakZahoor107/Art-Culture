@@ -1,4 +1,4 @@
-// src/routes/userRoutes.js
+// src/routes/userRoutes.ts
 
 import express from "express"
 import {

@@ -1,4 +1,4 @@
-// routes/geoRoutes.js
+// routes/geoRoutes.ts
 import express from "express"
 import {
   searchAddress,

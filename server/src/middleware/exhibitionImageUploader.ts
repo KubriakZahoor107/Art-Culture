@@ -1,4 +1,4 @@
-// exhibitionImageUploader.js
+// exhibitionImageUploader.ts
 import multer, { FileFilterCallback, StorageEngine } from "multer"
 import path, { dirname } from "path"
 import sharp from "sharp"

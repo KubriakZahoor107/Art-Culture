@@ -1,4 +1,4 @@
-// src/routes/productRoutes.js
+// src/routes/productRoutes.ts
 
 import express from "express"
 import { body } from "express-validator"
