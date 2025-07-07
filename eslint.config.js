@@ -1,32 +1,61 @@
-import js from '@eslint/js'
-import tsPlugin from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
-import importPlugin from 'eslint-plugin-import'
+// eslint.config.cjs
+const js = require('@eslint/js');
+const { createRequire } = require('module');
+const { resolve } = require('path');
 
-export default [
+// Беремо плагіни та парсери з server/node_modules
+const serverRequire = createRequire(resolve(process.cwd(), 'server/package.json'));
+const jestPlugin = serverRequire('eslint-plugin-jest');
+const tsPlugin = serverRequire('@typescript-eslint/eslint-plugin');
+const tsParser = serverRequire('@typescript-eslint/parser');
+const importPlugin = serverRequire('eslint-plugin-import');
+
+module.exports = [
   js.configs.recommended,
+
+  // 1) Загальний конфіг для усіх .js/.ts файлів
   {
-    files: ['**/*.{js,ts}'],
-    ignores: ['node_modules/', 'server/uploads/'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    ignores: ['node_modules/', 'dist/', 'server/dist/', 'server/uploads/'],
     languageOptions: {
       parser: tsParser,
-      ecmaVersion: 2023,
-      sourceType: 'module',
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      },
+      globals: {
+        process: 'readonly',
+        console: 'readonly'
+      }
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
-      import: importPlugin,
+      import: importPlugin
     },
     settings: {
       'import/resolver': {
-        node: { extensions: ['.js', '.ts'] },
-      },
+        node: { extensions: ['.js', '.jsx', '.ts', '.tsx'] }
+      }
     },
     rules: {
-      ...tsPlugin.configs.recommended.rules,
-      ...importPlugin.configs.recommended.rules,
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    },
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+    }
   },
-]
+
+  // 2) Окремо для тестів
+  {
+    files: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}'],
+    plugins: {
+      jest: jestPlugin
+    },
+    rules: {
+      ...jestPlugin.configs.recommended.rules
+    },
+    languageOptions: {
+      globals: {
+        ...jestPlugin.environments.globals.globals
+      }
+    }
+  }
+];

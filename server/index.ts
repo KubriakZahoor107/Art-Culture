@@ -1,60 +1,32 @@
-import prisma from './prismaClient.js'
-import dotenv from 'dotenv'
-import app from './app.js'
-import logger from './src/utils/logging.js'
+import 'dotenv/config';                               // завантажує .env
+import app from './src/app.js';                       // цей шлях → src/app.ts
+import prisma from './src/prismaClient.js';           // → src/prismaClient.ts
+import logger from './src/utils/logging.js';          // → src/utils/logging.ts
 
-dotenv.config()
+const PORT = Number(process.env.PORT) || 5000;
 
-// Define PORT
-const PORT = process.env.PORT || 5000 // Use a port that doesn't conflict with your frontend
+async function main(): Promise<void> {
+  try {
+    await prisma.$connect();
+    logger.info('✅ Successfully connected to the database');
 
-// Prisma client is initialized in prismaClient.js and imported here
-
-
-// Start the server and connect to the database
-async function startServer() {
-	try {
-		// Connect to the database
-                await prisma.$connect()
-                logger.info('Connected to the database successfully.')
-
-		// Start listening for incoming requests
-                app.listen(PORT, () => {
-                        logger.info(
-                                `Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`
-                        )
-                })
-	} catch (error) {
-                logger.error('Error starting the server:', error)
-                await prisma.$disconnect()
-                process.exit(1)
-	}
+    app.listen(PORT, () => {
+      logger.info(`🚀 Server listening on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    logger.error('🔥 FAILED TO START APP:', err);
+    process.exit(1);
+  }
 }
 
-startServer()
+main();
 
-// Handle unhandled promise rejections and exceptions
-process.on('unhandledRejection', async (reason, promise) => {
-        logger.error('Unhandled Rejection:', reason)
-        await prisma.$disconnect()
-        process.exit(1)
-})
+// глобальна обробка необроблених промісів/винятків
+process.on('unhandledRejection', (reason) => {
+  logger.error('❌ Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  logger.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
 
-process.on('uncaughtException', async error => {
-        logger.error('Uncaught Exception:', error)
-        await prisma.$disconnect()
-        process.exit(1)
-})
-
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-        logger.info('SIGINT received. Shutting down gracefully...')
-        await prisma.$disconnect()
-        process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-        logger.info('SIGTERM received. Shutting down gracefully...')
-        await prisma.$disconnect()
-        process.exit(0)
-})
