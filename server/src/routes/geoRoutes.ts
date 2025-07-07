@@ -3,7 +3,7 @@ import express from "express"
 import {
   searchAddress,
   searchMuseumAddress,
-} from "../controllers/geoController.js"
+} from "../controllers/geoController"
 
 const router = express.Router()
 

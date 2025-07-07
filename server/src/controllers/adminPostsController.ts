@@ -1,9 +1,9 @@
 // File: server/src/controllers/adminPostsController.ts
 
-import prisma from "../prismaClient.js";
+import prisma from "../prismaClient";
 import { body, validationResult } from "express-validator";
 import type { Request, Response, NextFunction, Router } from "express";
-import { authenticateToken, authorize } from "../middleware/authMiddleware.js";
+import { authenticateToken, authorize } from "../middleware/authMiddleware";
 
 export const getAllAdminPosts = async (
     req: Request,

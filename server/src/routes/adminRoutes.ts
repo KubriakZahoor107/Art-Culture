@@ -4,14 +4,14 @@ import asyncHandler from "express-async-handler";
 import { body } from "express-validator";
 
 // middleware
-import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
+import authenticateToken, { authorize } from "../middleware/authMiddleware";
 // контролери для адмін-постів
 import {
     getAllAdminPosts,
     getPendingPosts,
     approvePost,
     rejectPost,
-} from "../controllers/adminPostsController.js";
+} from "../controllers/adminPostsController";
 
 const router = Router();
 

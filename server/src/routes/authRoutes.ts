@@ -7,10 +7,10 @@ import {
   resetPasswordConfirm,
   getCurrentUser,
   updateUserProfile
-} from '../controllers/authController.js';
-import authenticateToken from '../middleware/authMiddleware.js';
-import authorize from '../middleware/roleMIddleware.js';
-import { uploadProfileLogoImages, processProfileLogoImages } from '../middleware/uploadProfileLogoImages.js';
+} from '../controllers/authController';
+import authenticateToken from '../middleware/authMiddleware';
+import authorize from '../middleware/roleMIddleware';
+import { uploadProfileLogoImages, processProfileLogoImages } from '../middleware/uploadProfileLogoImages';
 
 const router = express.Router();
 

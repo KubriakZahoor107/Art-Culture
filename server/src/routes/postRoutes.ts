@@ -14,9 +14,9 @@ import {
   getPostByExhibitionId,
   getPostByMuseumId,
   upload,
-} from '../controllers/postController.js';
+} from '../controllers/postController';
 
-import authenticateToken from '../middleware/authMiddleware.js';
+import authenticateToken from '../middleware/authMiddleware';
 
 const router = express.Router();
 

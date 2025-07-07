@@ -5,9 +5,9 @@ import multer, { FileFilterCallback } from "multer";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import prisma from "../prismaClient.js";
-import logger from "../utils/logging.js";
-import { AuthRequest } from "../middleware/authMiddleware.js";
+import prisma from "../prismaClient";
+import logger from "../utils/logging";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 // 🛠 Підготовка __dirname для ESM
 const __filename = fileURLToPath(import.meta.url);

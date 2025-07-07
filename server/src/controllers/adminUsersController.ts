@@ -1,9 +1,9 @@
 // server/src/controllers/adminUsersController.ts
 import { Request, Response, NextFunction, Router } from "express"
 import { body, validationResult } from "express-validator"
-import prisma from "../prismaClient.js"
-import authenticateToken from "../middleware/authMiddleware.js"
-import authorize from "../middleware/roleMIddleware.js"
+import prisma from "../prismaClient"
+import authenticateToken from "../middleware/authMiddleware"
+import authorize from "../middleware/roleMIddleware"
 
 // Валідні стовпці та їх дефолтні напрями
 const validColumns: Array<[string, "asc" | "desc"]> = [

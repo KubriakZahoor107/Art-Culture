@@ -1,5 +1,5 @@
 // server/src/middleware/errorHandler.ts
-import logger from "../utils/logging.js";
+import logger from "../utils/logging";
 import { Request, Response, NextFunction, RequestHandler } from 'express'
 
 export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler =>

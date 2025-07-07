@@ -6,17 +6,17 @@ const rateLimit = (rateLimitPkg as any).default ?? rateLimitPkg;
 import cors from 'cors';
 import morgan from 'morgan';
 
-import errorHandler from './middleware/errorHandler.js';
-import authRoutes from './routes/authRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
-import postRoutes from './routes/postRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import productRoutes from './routes/productRoutes.js';
-import exhibitionRoutes from './routes/exhibitionRoutes.js';
-import artTermsRoutes from './routes/artTermsRoutes.js';
-import searchRoutes from './routes/searchRoutes.js';
-import geoRoutes from './routes/geoRoutes.js';
-import likeRoutes from './routes/likeRoutes.js';
+import errorHandler from './middleware/errorHandler';
+import authRoutes from './routes/authRoutes';
+import adminRoutes from './routes/adminRoutes';
+import postRoutes from './routes/postRoutes';
+import userRoutes from './routes/userRoutes';
+import productRoutes from './routes/productRoutes';
+import exhibitionRoutes from './routes/exhibitionRoutes';
+import artTermsRoutes from './routes/artTermsRoutes';
+import searchRoutes from './routes/searchRoutes';
+import geoRoutes from './routes/geoRoutes';
+import likeRoutes from './routes/likeRoutes';
 
 const app = express();
 

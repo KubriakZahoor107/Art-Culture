@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-import prisma from "../prismaClient.js"
+import prisma from "../prismaClient"
 export async function searchAuthors(
   req: Request,
   res: Response,

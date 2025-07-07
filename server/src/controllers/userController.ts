@@ -1,8 +1,8 @@
 // src/controllers/userController.js
 
 import { Request, Response, NextFunction } from "express"
-import prisma from "../prismaClient.js"
-import logger from "../utils/logging.js"
+import prisma from "../prismaClient"
+import logger from "../utils/logging"
 
 // src/controllers/userController.js
 

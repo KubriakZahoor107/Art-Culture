@@ -1,10 +1,10 @@
-import prisma from "../prismaClient.js"
+import prisma from "../prismaClient"
 import { validationResult } from "express-validator"
 import fs from "fs"
 import path, { dirname } from "path"
 import { fileURLToPath } from "url"
 import { Request, Response, NextFunction } from "express"
-import { AuthRequest } from "../middleware/authMiddleware.js"
+import { AuthRequest } from "../middleware/authMiddleware"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)

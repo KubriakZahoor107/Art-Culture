@@ -1,7 +1,7 @@
 // server/src/controllers/likeController.ts
 import { Response, NextFunction } from "express";
-import prisma from "../prismaClient.js";
-import { AuthRequest } from "../middleware/authMiddleware.js";
+import prisma from "../prismaClient";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 /**
  * Визначає, за яким полем шукати лайки

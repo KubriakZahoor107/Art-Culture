@@ -1,8 +1,8 @@
 // server/src/controllers/exhibitionController.ts
 
 import { Request, Response, NextFunction, Express } from 'express';
-import prisma from '../prismaClient.js';
-import logger from '../utils/logging.js';
+import prisma from '../prismaClient';
+import logger from '../utils/logging';
 
 export const createExhibitions = async (
   req: Request,

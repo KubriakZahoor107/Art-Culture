@@ -4,8 +4,8 @@ import { Router, Request, Response, NextFunction } from "express";
 import asyncHandler from "express-async-handler";
 import { body, validationResult } from "express-validator";
 
-import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
-import uploadExhibition from "../middleware/exhibitionImageUploader.js";
+import authenticateToken, { authorize } from "../middleware/authMiddleware";
+import uploadExhibition from "../middleware/exhibitionImageUploader";
 
 import {
   createExhibitions,
@@ -15,7 +15,7 @@ import {
   getProductsByExhibitionId,    // <- тут була єдина форма
   updateExhibition,
   deleteExhibition,
-} from "../controllers/exhibitionController.js";
+} from "../controllers/exhibitionController";
 
 const router = Router();
 

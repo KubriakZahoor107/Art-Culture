@@ -14,8 +14,8 @@ const rawDbUrl = process.env.DATABASE_URL ?? '';
 const cleanDbUrl = rawDbUrl.trim().replace(/^"+|"+$/g, '');
 console.log('🔗 Using DATABASE_URL:', cleanDbUrl);
 
-import app from './app.js';
-import logger from './utils/logging.js';
+import app from './app';
+import logger from './utils/logging';
 import { PrismaClient } from '@prisma/client';
 
 // Ініціалізація Prisma з очищеним URL

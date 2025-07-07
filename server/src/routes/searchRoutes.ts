@@ -4,8 +4,8 @@ import {
   searchAuthors,
   searchMuseum,
   searchPainting,
-} from "../controllers/searchController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
+} from "../controllers/searchController"
+import authenticateToken from "../middleware/authMiddleware"
 
 const router = express.Router()
 
