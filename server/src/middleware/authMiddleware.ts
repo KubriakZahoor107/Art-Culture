@@ -82,10 +82,3 @@ export function authorize(...allowedRoles: string[]) {
 // Щоб можна було імпортувати й так:
 // import authenticateToken from "../middleware/authMiddleware";
 export default authenticateToken;
-
-
-
-
-
-
-
