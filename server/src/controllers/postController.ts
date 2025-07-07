@@ -105,7 +105,8 @@ export const getAllPosts = async (
     res.json(posts);
   } catch (err) {
     if ((err as any).code === 'P2021') {
-      return res.json([]);
+      res.json([]);
+      return;
     }
     next(err);
   }
@@ -238,7 +239,8 @@ export function makeRoleFinder(
       res.json({ posts });
     } catch (err: any) {
       if (err.code === "P2021") {
-        return res.json({ posts: [] });
+        res.json({ posts: [] });
+        return;
       }
       logger.error(`Error fetching ${role} posts:`, err);
       next(err);
@@ -262,7 +264,7 @@ export async function getAuthorsPosts(
   return makeRoleFinder("AUTHOR")(req, res, next);
 }
 
-export async function getExhibitionsPosts(
+export async function getExhibitionsPost(
   req: Request,
   res: Response,
   next: NextFunction
@@ -270,7 +272,7 @@ export async function getExhibitionsPosts(
   return makeRoleFinder("EXHIBITION")(req, res, next);
 }
 
-export async function getMuseumsPosts(
+export async function getMuseumsPost(
   req: Request,
   res: Response,
   next: NextFunction
@@ -301,7 +303,8 @@ export function makeByAuthorId(
       res.json({ posts });
     } catch (err: any) {
       if (err.code === "P2021") {
-        return res.json({ posts: [] });
+        res.json({ posts: [] });
+        return;
       }
       next(err);
     }
@@ -316,7 +319,7 @@ export async function getPostsByAuthorId(
   return makeByAuthorId("authorId")(req, res, next);
 }
 
-export async function getPostsByExhibitionId(
+export async function getPostByExhibitionId(
   req: Request,
   res: Response,
   next: NextFunction
@@ -324,7 +327,7 @@ export async function getPostsByExhibitionId(
   return makeByAuthorId("exhibitionId")(req, res, next);
 }
 
-export async function getPostsByMuseumId(
+export async function getPostByMuseumId(
   req: Request,
   res: Response,
   next: NextFunction

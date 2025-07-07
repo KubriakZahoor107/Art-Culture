@@ -8,11 +8,11 @@ import {
   updatePost,
   getCreatorsPosts,
   getAuthorsPosts,
-  getExhibitionsPosts,
-  getMuseumsPosts,
+  getExhibitionsPost,
+  getMuseumsPost,
   getPostsByAuthorId,
-  getPostsByExhibitionId,
-  getPostsByMuseumId,
+  getPostByExhibitionId,
+  getPostByMuseumId,
   upload,
 } from '../controllers/postController.js';
 
@@ -38,12 +38,12 @@ router.delete('/:id', authenticateToken, deletePost);
 // GET POSTS BY ROLE
 router.get('/creators', getCreatorsPosts);
 router.get('/authors', getAuthorsPosts);
-router.get('/exhibitions', getExhibitionsPosts);
-router.get('/museums', getMuseumsPosts);
+router.get('/exhibitions', getExhibitionsPost);
+router.get('/museums', getMuseumsPost);
 
 // GET POSTS BY ENTITY ID
 router.get('/by-author/:authorId', getPostsByAuthorId);
-router.get('/by-exhibition/:exhibitionId', getPostsByExhibitionId);
-router.get('/by-museum/:museumId', getPostsByMuseumId);
+router.get('/by-exhibition/:exhibitionId', getPostByExhibitionId);
+router.get('/by-museum/:museumId', getPostByMuseumId);
 
 export default router;
