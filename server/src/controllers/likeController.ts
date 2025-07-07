@@ -51,7 +51,12 @@ export const toggleLikeEntity = async (
     if (existing) {
       await prisma.like.delete({ where: { id: existing.id } });
     } else {
-      await prisma.like.create({ data: whereClause });
+      await prisma.like.create({
+        data: {
+          [field]: idNum,
+          user: { connect: { id: userId } },
+        } as any,
+      });
       liked = true;
     }
 

@@ -8,11 +8,11 @@ import { AuthRequest } from "../middleware/authMiddleware.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-export const createProduct = async (
+export async function createProduct(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -72,18 +72,24 @@ export const createProduct = async (
     next(error)
   }
 }
-export const getProducts = async (
+export async function getProducts(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const { authorIds } = req.query // Expecting 'authorIds=1,2,3'
 
     let products
 
     if (authorIds) {
-      const authorIdArray = authorIds.split(",").map((id) => parseInt(id, 10))
+      const ids =
+        typeof authorIds === "string"
+          ? authorIds.split(",")
+          : Array.isArray(authorIds)
+          ? authorIds
+          : []
+      const authorIdArray = ids.map((id) => parseInt(id as string, 10))
 
       // Validate that all IDs are numbers
       if (authorIdArray.some(isNaN)) {
@@ -131,11 +137,11 @@ export const getProducts = async (
   }
 }
 
-export const getProductById = async (
+export async function getProductById(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const productId = parseInt(req.params.productId, 10)
     if (isNaN(productId)) {
@@ -167,11 +173,11 @@ export const getProductById = async (
   }
 }
 
-export const getUserProducts = async (
+export async function getUserProducts(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const userId = req.user.id
 
@@ -200,11 +206,11 @@ export const getUserProducts = async (
   }
 }
 
-export const getCreatorProducts = async (
+export async function getCreatorProducts(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -234,11 +240,11 @@ export const getCreatorProducts = async (
   }
 }
 
-export const getProductByAuthorId = async (
+export async function getProductByAuthorId(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const authorId = parseInt(req.params.authorId, 10)
     if (isNaN(authorId)) {
@@ -274,11 +280,11 @@ export const getProductByAuthorId = async (
   }
 }
 
-export const getMuseumProducts = async (
+export async function getMuseumProducts(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -308,11 +314,11 @@ export const getMuseumProducts = async (
   }
 }
 
-export const getProductByMuseumId = async (
+export async function getProductByMuseumId(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const museumId = parseInt(req.params.museumId, 10)
     if (isNaN(museumId)) {
@@ -348,11 +354,11 @@ export const getProductByMuseumId = async (
   }
 }
 
-export const updateProduct = async (
+export async function updateProduct(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const { id } = req.params
     const {
@@ -433,11 +439,11 @@ export const updateProduct = async (
   }
 }
 
-export const deleteProduct = async (
+export async function deleteProduct(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const { id } = req.params
     const userId = req.user.id
@@ -478,11 +484,11 @@ export const deleteProduct = async (
   }
 }
 
-export const getProductByExhibitionId = async (
+export async function getProductByExhibitionId(
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> {
   try {
     const exhibitionId = parseInt(req.params.exhibitionId, 10)
     if (isNaN(exhibitionId)) {

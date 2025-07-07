@@ -1,11 +1,16 @@
 // src/controllers/userController.js
 
+import { Request, Response, NextFunction } from "express"
 import prisma from "../prismaClient.js"
 import logger from "../utils/logging.js"
 
 // src/controllers/userController.js
 
-export const getCreatorsByLanguage = async (req, res, next) => {
+export async function getCreatorsByLanguage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const { language } = req.params
   const { letter } = req.query
 
@@ -59,7 +64,11 @@ export const getCreatorsByLanguage = async (req, res, next) => {
   }
 }
 
-export const getMuseumsByLanguage = async (req, res, next) => {
+export async function getMuseumsByLanguage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const { language } = req.params
   const { letter } = req.query
 
@@ -113,7 +122,11 @@ export const getMuseumsByLanguage = async (req, res, next) => {
   }
 }
 
-export const getCreators = async (req, res, next) => {
+export async function getCreators(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const creators = await prisma.user.findMany({
       where: {
@@ -137,7 +150,11 @@ export const getCreators = async (req, res, next) => {
   }
 }
 
-export const getCreatorById = async (req, res, next) => {
+export async function getCreatorById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const creatorId = parseInt(req.params.id, 10)
     if (isNaN(creatorId)) {
@@ -166,7 +183,11 @@ export const getCreatorById = async (req, res, next) => {
   }
 }
 
-export const getAuthorsByLanguage = async (req, res, next) => {
+export async function getAuthorsByLanguage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const { language } = req.params
   const { letter } = req.query
 
@@ -219,7 +240,11 @@ export const getAuthorsByLanguage = async (req, res, next) => {
   }
 }
 
-export const getAuthors = async (req, res, next) => {
+export async function getAuthors(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const authors = await prisma.user.findMany({
       where: {
@@ -243,7 +268,11 @@ export const getAuthors = async (req, res, next) => {
   }
 }
 
-export const getAuthorById = async (req, res, next) => {
+export async function getAuthorById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const authorId = parseInt(req.params.id, 10)
     if (isNaN(authorId)) {
@@ -272,7 +301,11 @@ export const getAuthorById = async (req, res, next) => {
   }
 }
 
-export const getMuseums = async (req, res, next) => {
+export async function getMuseums(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const museums = await prisma.user.findMany({
       where: {
@@ -293,7 +326,7 @@ export const getMuseums = async (req, res, next) => {
         street: true,
         house_number: true,
         postcode: true,
-        museum_logo_image: {
+        museumLogoImage: {
           select: {
             imageUrl: true,
           },
@@ -307,7 +340,11 @@ export const getMuseums = async (req, res, next) => {
     next(error)
   }
 }
-export const getMuseumById = async (req, res, next) => {
+export async function getMuseumById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const museumId = parseInt(req.params.id, 10)
     if (isNaN(museumId)) {
@@ -317,7 +354,7 @@ export const getMuseumById = async (req, res, next) => {
     const museum = await prisma.user.findUnique({
       where: { id: museumId },
       include: {
-        museum_logo_image: true,
+        museumLogoImage: true,
         products: {
           include: {
             images: true,
@@ -337,7 +374,11 @@ export const getMuseumById = async (req, res, next) => {
   }
 }
 
-export const getExhibitions = async (req, res, next) => {
+export async function getExhibitions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const exhibition = await prisma.user.findMany({
       where: {
@@ -361,7 +402,11 @@ export const getExhibitions = async (req, res, next) => {
   }
 }
 
-export const getExhibitionById = async (req, res, next) => {
+export async function getExhibitionById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const exhibitionId = parseInt(req.params.id, 10)
     if (isNaN(exhibitionId)) {
