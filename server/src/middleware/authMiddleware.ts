@@ -50,7 +50,7 @@ export async function authenticateToken(
       return;
     }
 
-    ; (req as AuthRequest).user = user;
+    (req as AuthRequest).user = user;
     next();
   } catch (err) {
     res.status(403).json({ error: "Invalid token" });
