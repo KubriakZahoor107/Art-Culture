@@ -1,3 +1,4 @@
+# файл: .github/workflows/ci.yml
 name: Node CI
 
 on:
@@ -9,18 +10,48 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # Додаємо Postgres як сервіс контейнерів
+    services:
+      db:
+        image: postgres:15
+        ports:
+          - 5432:5432            # HOST:CONTAINER
+        env:
+          POSTGRES_USER: artuser
+          POSTGRES_PASSWORD: artpass
+          POSTGRES_DB: artculture
+        options: >-
+          --health-cmd "pg_isready -U artuser"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Змінна середовища для всіх кроків job
+    env:
+      DATABASE_URL: postgresql://artuser:artpass@localhost:5432/artculture?schema=public
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps --prefix server
+
       - name: Prisma migrate
         run: npx prisma migrate deploy --schema server/prisma/schema.prisma
+
       - name: Prisma generate
         run: npx prisma generate --schema server/prisma/schema.prisma
+
       - name: Test
         run: npm test --prefix server
+
       - name: Lint
         run: npm run lint --prefix server
+
