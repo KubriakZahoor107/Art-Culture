@@ -1,0 +1,102 @@
+import axios from "axios";
+export const searchAddress = async (req, res, next) => {
+    try {
+        const query = String(req.query.q ?? "");
+        if (query.length < 3) {
+            res.json([]);
+            return;
+        }
+        const response = await axios.get("https://nominatim.openstreetmap.org/search", {
+            params: {
+                q: query,
+                format: "jsonv2",
+                addressdetails: 1,
+                limit: 10,
+            },
+            headers: {
+                "User-Agent": "ArtPlayUkraine/1.0",
+            },
+        });
+        const processedData = response.data.map((item) => {
+            const addr = item.address ?? {};
+            const road = addr.road ?? "";
+            const house_number = addr.house_number ?? "";
+            const city = addr.city ?? addr.town ?? addr.village ?? "";
+            const state = addr.state ?? "";
+            const postcode = addr.postcode ?? "";
+            const roadFormatted = road
+                ? road.toLowerCase().startsWith("вулиця")
+                    ? road
+                    : `вулиця ${road}`
+                : "";
+            const display_name = [
+                roadFormatted,
+                house_number.toUpperCase(),
+                city,
+                state,
+                postcode || "Нема індекса",
+            ]
+                .filter(Boolean)
+                .join(", ");
+            return {
+                display_name,
+                lat: item.lat,
+                lon: item.lon,
+            };
+        });
+        res.json(processedData);
+    }
+    catch (err) {
+        console.error("Error fetching address:", err);
+        next(err);
+    }
+};
+export const searchMuseumAddress = async (req, res, next) => {
+    try {
+        const query = String(req.query.q ?? "");
+        if (query.length < 3) {
+            res.json([]);
+            return;
+        }
+        const response = await axios.get("https://nominatim.openstreetmap.org/search", {
+            params: {
+                q: query,
+                format: "jsonv2",
+                addressdetails: 1,
+                limit: 10,
+            },
+            headers: {
+                "User-Agent": "ArtPlayUkraine/1.0",
+            },
+        });
+        const processedData = response.data.map((item) => {
+            const addr = item.address ?? {};
+            const road = addr.road ?? "";
+            const house_number = addr.house_number ?? "";
+            const city = addr.city ?? addr.town ?? addr.village ?? "";
+            const state = addr.state ?? "";
+            const postcode = addr.postcode ?? "";
+            const country = addr.country ?? "";
+            const roadFormatted = road
+                ? road.toLowerCase().startsWith("вулиця")
+                    ? road
+                    : `вулиця ${road}`
+                : "";
+            return {
+                country,
+                state,
+                city,
+                road: roadFormatted,
+                house_number: house_number.toUpperCase(),
+                postcode,
+                lat: item.lat,
+                lon: item.lon,
+            };
+        });
+        res.json(processedData);
+    }
+    catch (err) {
+        console.error("Error fetching museum address:", err);
+        next(err);
+    }
+};

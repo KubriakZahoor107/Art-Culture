@@ -1,0 +1,6 @@
+*** Begin Patch
+*** Update File: prisma/schema.prisma
+@@ model Post {
+-  author       User        @relation(fields: [authorId], references: [id])
++  author       User        @relation(fields: [authorId], references: [id], name: "PostAuthor")
+*** End Patch

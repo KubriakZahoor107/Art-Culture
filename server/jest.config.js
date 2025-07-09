@@ -1,11 +1,17 @@
 export default {
-  preset: 'ts-jest/presets/js-with-ts-esm',
-  testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.ts'], // ← ❗️правильно залишити тільки .ts
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-  },
+  preset: 'ts-jest/presets/default-esm',
   transform: {
-    '^.+\\.(t|j)sx?$': ['ts-jest', { useESM: true }],
+    '^.+\\.ts$': ['ts-jest', { useESM: true }]
   },
+  extensionsToTreatAsEsm: ['.ts'],
+  moduleFileExtensions: ['ts', 'js'],
+  testEnvironment: 'node',
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  }
 };

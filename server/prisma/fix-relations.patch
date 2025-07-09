@@ -1,0 +1,43 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 0000000..1111111 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+
+@@ model Post {
+-  author       User        @relation(fields: [authorId], references: [id])
++  author       User        @relation(name: "PostAuthor", fields: [authorId], references: [id])
+@@ model Product {
+-  author         User             @relation(fields: [authorId], references: [id])
++  author         User             @relation(name: "ProductAuthor", fields: [authorId], references: [id])
+-  museum         User?            @relation("MuseumProducts", fields: [museumId], references: [id])
++  museum         User?            @relation(name: "ProductMuseum", fields: [museumId], references: [id])
+-  images         ProductImage[]
++  images         ProductImage[]   @relation(name: "ProductImages")
+@@ model ProductImage {
+-  product   Product @relation("ProductImages", fields: [productId], references: [id])
++  product   Product @relation(name: "ProductImages", fields: [productId], references: [id])
+@@ model Exhibition {
+-  createdBy       User      @relation("UserCreatedExhibitions", fields: [createdById], references: [id])
++  createdBy       User      @relation(name: "ExhibitionCreatedBy", fields: [createdById], references: [id])
+-  museum          User?     @relation("MuseumExhibition", fields: [museumId], references: [id])
++  museum          User?     @relation(name: "ExhibitionMuseum", fields: [museumId], references: [id])
+-  products        ExhibitionProduct[]
++  products        ExhibitionProduct[] @relation(name: "ExhibitionProducts")
+-  images          ExhibitionImage[]    @relation("ExhibitionsImages")
++  images          ExhibitionImage[]    @relation(name: "ExhibitionImages")
+@@ model ExhibitionProduct {
+-  exhibition   Exhibition @relation(fields: [exhibitionId], references: [id])
++  exhibition   Exhibition @relation(name: "ExhibitionProducts", fields: [exhibitionId], references: [id])
+-  product      Product    @relation(fields: [productId], references: [id])
++  product      Product    @relation(name: "ExhibitionProducts", fields: [productId], references: [id])
+@@ model ExhibitionImage {
+-  exhibition   Exhibition @relation("ExhibitionsImages", fields: [exhibitionId], references: [id], onDelete: Cascade)
++  exhibition   Exhibition @relation(name: "ExhibitionImages", fields: [exhibitionId], references: [id], onDelete: Cascade)
+@@ model ExhibitionArtist {
+-  artist       User      @relation(fields: [artistId], references: [id])
++  artist       User      @relation(name: "ExhibitionArtistUser", fields: [artistId], references: [id])
+@@ model ArtTerm {
+-  author              User      @relation(fields: [authorId], references: [id])
++  author              User      @relation(name: "ArtTermAuthor", fields: [authorId], references: [id])
+-  highlightedProduct  Product   @relation(fields: [highlightedProductId], references: [id])
++  highlightedProduct  Product   @relation(name: "ArtTermHighlight", fields: [highlightedProductId], references: [id])
