@@ -1,9 +1,15 @@
-import js from '@eslint/js'
-import tsPlugin from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
-import importPlugin from 'eslint-plugin-import'
+const { createRequire } = require('module')
+const path = require('path')
 
-export default [
+const requireServer = createRequire(path.join(__dirname, 'server', 'package.json'))
+
+const js = requireServer('@eslint/js')
+const tsPlugin = requireServer('@typescript-eslint/eslint-plugin')
+const tsParser = requireServer('@typescript-eslint/parser')
+const importPlugin = requireServer('eslint-plugin-import')
+const globals = requireServer('globals')
+
+module.exports = [
   js.configs.recommended,
   {
     files: ['**/*.{js,ts}'],
@@ -12,6 +18,10 @@ export default [
       parser: tsParser,
       ecmaVersion: 2023,
       sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,

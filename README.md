@@ -25,7 +25,7 @@ Portions of the backend are gradually being migrated to **TypeScript** for impro
 
 ## Tests and Linting
 
-Dev dependencies such as Jest and ESLint are installed with `npm install` in the `server` directory. ESLint now uses the flat configuration file `eslint.config.js` at the project root. Tests live under `server/tests` and must be executed from that folder.
+Dev dependencies such as Jest and ESLint are installed with `npm install` in the `server` directory. ESLint now uses the flat configuration file `eslint.config.cjs` at the project root. Tests live under `server/tests` and must be executed from that folder.
 
 ```bash
 npm run lint --prefix server
