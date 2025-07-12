@@ -5,6 +5,11 @@
     "node": ">=20.0.0"
   },
   "type": "module",
+  "jest": {
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ]
+  },
   "main": "index.js",
   "license": "MIT",
   "scripts": {
