@@ -6,21 +6,36 @@
   },
   "type": "module",
   "jest": {
-    "roots": ["<rootDir>/src"],
-    "testMatch": ["**/src/tests/**/*.test.ts"],
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/src/tests/**/*.test.ts"
+    ],
     "transform": {
       "^.+\\.[tj]sx?$": "babel-jest"
     },
     "transformIgnorePatterns": [],
-    "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "moduleFileExtensions": ["ts","js","json","node"],
-    "testPathIgnorePatterns": ["/node_modules/","/dist/"],
-    "modulePathIgnorePatterns": ["<rootDir>/dist/"]
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ]
   },
   "main": "index.js",
   "license": "MIT",
