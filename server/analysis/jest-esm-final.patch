@@ -24,30 +24,48 @@ index cce264c..0000000
 -  extensionsToTreatAsEsm: ['.ts'],
 -};
 diff --git a/server/package.json b/server/package.json
-index 58d8bcc..73a8bb7 100644
+index 58d8bcc..01cb370 100644
 --- a/server/package.json
 +++ b/server/package.json
-@@ -6,9 +6,17 @@
+@@ -6,8 +6,31 @@
    },
    "type": "module",
    "jest": {
--    "extensionsToTreatAsEsm": [
--      ".ts"
--    ]
 +    "transform": {
-+      "^.+\\.[tj]sx?$": ["ts-jest", { "tsconfig": "server/tsconfig.json", "useESM": true }]
++      "^.+\\.[tj]sx?$": [
++        "ts-jest",
++        {
++          "tsconfig": "tsconfig.json",
++          "useESM": true
++        }
++      ]
 +    },
 +    "preset": "ts-jest/presets/default-esm",
 +    "testEnvironment": "node",
-+    "extensionsToTreatAsEsm": [".ts"],
+     "extensionsToTreatAsEsm": [
+       ".ts"
++    ],
 +    "moduleNameMapper": {
 +      "^(\\.{1,2}/.*)\\.js$": "$1"
 +    },
-+    "moduleFileExtensions": ["ts", "js", "json", "node"],
-+    "testMatch": ["**/src/tests/**/*.test.ts"]
++    "moduleFileExtensions": [
++      "ts",
++      "js",
++      "json",
++      "node"
++    ],
++    "testMatch": [
++      "**/src/tests/**/*.test.ts"
+     ]
    },
    "main": "index.js",
-   "license": "MIT",
+@@ -71,4 +94,4 @@
+     "typescript": "^5",
+     "typescript-eslint": "^8.36.0"
+   }
+-}
++}
+\ No newline at end of file
 diff --git a/server/tsconfig.json b/server/tsconfig.json
 index febd8a2..5c36401 100644
 --- a/server/tsconfig.json

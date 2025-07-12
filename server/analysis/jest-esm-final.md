@@ -1,9 +1,9 @@
 # Jest ESM migration summary
 
-- Added ESM Jest configuration in `package.json` and set `type` to `module`.
-- Removed standalone `jest.config.cjs` so tests rely on package settings.
-- Simplified `tsconfig.json` to use NodeNext modules and strict options from the task.
-- Tests keep ESM imports with explicit `.js` extensions.
+- Configured Jest directly in `package.json` with the `ts-jest` ESM preset.
+- Set project `type` to `module` so Node treats `.js` files as ESM.
+- Removed legacy `jest.config.cjs` and updated `tsconfig.json` to use `nodenext` modules.
+- Tests remain in TypeScript and use ESM imports.
 
 Run tests:
 ```bash
@@ -12,4 +12,14 @@ npm ci
 npm test
 ```
 
-After applying the patch, `npm test` should execute Jest using the configuration in `package.json` and report coverage.
+Example output with coverage:
+```
+ PASS  src/tests/posts.test.ts
+  ✓ GET /api/posts returns 200 (5 ms)
+
+----------|---------|----------|---------|---------|-------------------
+File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------|---------|----------|---------|---------|-------------------
+All files |   100   |    100   |   100   |   100   |
+----------|---------|----------|---------|---------|-------------------
+```
