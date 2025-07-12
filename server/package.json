@@ -7,16 +7,31 @@
   "type": "module",
   "jest": {
     "transform": {
-      "^.+\\.[tj]sx?$": ["ts-jest", { "tsconfig": "server/tsconfig.json", "useESM": true }]
+      "^.+\\.[tj]sx?$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.json",
+          "useESM": true
+        }
+      ]
     },
     "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "moduleFileExtensions": ["ts", "js", "json", "node"],
-    "testMatch": ["**/src/tests/**/*.test.ts"]
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ],
+    "testMatch": [
+      "**/src/tests/**/*.test.ts"
+    ]
   },
   "main": "index.js",
   "license": "MIT",
