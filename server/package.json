@@ -6,6 +6,17 @@
   },
   "type": "module",
   "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/coverage/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/__mocks__/",
+      "<rootDir>/../"
+    ],
     "transform": {
       "^.+\\.[tj]sx?$": [
         "ts-jest",
