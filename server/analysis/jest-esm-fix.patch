@@ -1,0 +1,90 @@
+From eb495979c2c7c3d97e9f816a29d0b912612718ae Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Sat, 12 Jul 2025 03:20:38 +0000
+Subject: [PATCH] fix routes and tests for esm
+
+---
+ server/src/controllers/postController.ts |  8 ++++----
+ server/src/routes/postRoutes.ts          | 16 ++++++++--------
+ server/src/tests/posts.test.ts           |  4 ++--
+ 3 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/server/src/controllers/postController.ts b/server/src/controllers/postController.ts
+index 4b33868..1e7a33c 100644
+--- a/server/src/controllers/postController.ts
++++ b/server/src/controllers/postController.ts
+@@ -244,8 +244,8 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
+ 
+ export const getCreatorsPosts = makeRoleFinder("CREATOR");
+ export const getAuthorsPosts = makeRoleFinder("AUTHOR");
+-export const getExhibitionsPosts = makeRoleFinder("EXHIBITION");
+-export const getMuseumsPosts = makeRoleFinder("MUSEUM");
++export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
++export const getMuseumsPost = makeRoleFinder("MUSEUM");
+ 
+ // ———————————————
+ // GET POSTS BY ENTITY ID
+@@ -274,6 +274,6 @@ export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId")
+ }
+ 
+ export const getPostsByAuthorId = makeByAuthorId("authorId");
+-export const getPostsByExhibitionId = makeByAuthorId("exhibitionId");
+-export const getPostsByMuseumId = makeByAuthorId("museumId");
++export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
++export const getPostByMuseumId = makeByAuthorId("museumId");
+ 
+diff --git a/server/src/routes/postRoutes.ts b/server/src/routes/postRoutes.ts
+index f987824..16f2913 100644
+--- a/server/src/routes/postRoutes.ts
++++ b/server/src/routes/postRoutes.ts
+@@ -8,11 +8,11 @@ import {
+   updatePost,
+   getCreatorsPosts,
+   getAuthorsPosts,
+-  getExhibitionsPosts,
+-  getMuseumsPosts,
++  getExhibitionsPost,
++  getMuseumsPost,
+   getPostsByAuthorId,
+-  getPostsByExhibitionId,
+-  getPostsByMuseumId,
++  getPostByExhibitionId,
++  getPostByMuseumId,
+   upload,
+ } from '../controllers/postController.js';
+ import authenticateToken from '../middleware/authMiddleware.js';
+@@ -37,12 +37,12 @@ router.delete('/:id', authenticateToken, deletePost);
+ // GET POSTS BY ROLE
+ router.get('/creators', getCreatorsPosts);
+ router.get('/authors', getAuthorsPosts);
+-router.get('/exhibitions', getExhibitionsPosts);
+-router.get('/museums', getMuseumsPosts);
++router.get('/exhibitions', getExhibitionsPost);
++router.get('/museums', getMuseumsPost);
+ 
+ // GET POSTS BY ENTITY ID
+ router.get('/by-author/:authorId', getPostsByAuthorId);
+-router.get('/by-exhibition/:exhibitionId', getPostsByExhibitionId);
+-router.get('/by-museum/:museumId', getPostsByMuseumId);
++router.get('/by-exhibition/:exhibitionId', getPostByExhibitionId);
++router.get('/by-museum/:museumId', getPostByMuseumId);
+ 
+ export default router;
+diff --git a/server/src/tests/posts.test.ts b/server/src/tests/posts.test.ts
+index 98bdc00..52c0365 100644
+--- a/server/src/tests/posts.test.ts
++++ b/server/src/tests/posts.test.ts
+@@ -1,8 +1,8 @@
+ // @ts-nocheck
+ 
+ import prisma from '../prismaClient.js'
+-const request = require('supertest');
+-const app = require('../app');
++import request from 'supertest'
++import app from '../app.js'
+ jest.mock('../prismaClient.js', () => ({
+   post: {
+     findMany: jest.fn().mockResolvedValue([]),
+-- 
+2.43.0
+

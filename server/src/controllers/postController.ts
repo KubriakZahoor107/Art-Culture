@@ -244,8 +244,8 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
 
 export const getCreatorsPosts = makeRoleFinder("CREATOR");
 export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPosts = makeRoleFinder("EXHIBITION");
-export const getMuseumsPosts = makeRoleFinder("MUSEUM");
+export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
+export const getMuseumsPost = makeRoleFinder("MUSEUM");
 
 // ———————————————
 // GET POSTS BY ENTITY ID
@@ -274,6 +274,6 @@ export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") 
 }
 
 export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostsByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostsByMuseumId = makeByAuthorId("museumId");
+export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
+export const getPostByMuseumId = makeByAuthorId("museumId");
 

@@ -1,8 +1,8 @@
 // @ts-nocheck
 
 import prisma from '../prismaClient.js'
-const request = require('supertest');
-const app = require('../app');
+import request from 'supertest'
+import app from '../app.js'
 jest.mock('../prismaClient.js', () => ({
   post: {
     findMany: jest.fn().mockResolvedValue([]),
