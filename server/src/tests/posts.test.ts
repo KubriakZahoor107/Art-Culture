@@ -1,10 +1,11 @@
 // @ts-nocheck
 
-import prisma from '../prismaClient.js'
 import request from 'supertest'
-import app from '../app.js'
+import app from '../app'               // Явно .js → Jest підхоплює app.ts
+import prisma from '../prismaClient'      // Без розширення → Jest шукає prismaClient.ts
 
-jest.mock('../prismaClient.js', () => ({
+// Mock для prismaClient
+jest.mock('../prismaClient', () => ({
   post: {
     findMany: jest.fn().mockResolvedValue([]),
   },
