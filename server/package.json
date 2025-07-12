@@ -37,11 +37,12 @@
     "moduleFileExtensions": [
       "ts",
       "js",
+      "cjs",
       "json",
       "node"
     ],
     "testMatch": [
-      "**/src/tests/**/*.test.ts"
+      "**/src/tests/**/*.test.{ts,cjs}"
     ]
   },
   "main": "index.js",
