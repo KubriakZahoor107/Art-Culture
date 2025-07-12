@@ -1,0 +1,62 @@
+*** Begin Patch
+*** Update File: server/babel.config.cjs
+@@
+-module.exports = {
+-  root: true,
+-  babelrc: false,
++module.exports = {
+   presets: [
+     ['@babel/preset-env', { targets: { node: '20' } }],
+     '@babel/preset-typescript'
+   ],
+   plugins: [
+     '@babel/plugin-syntax-import-meta'
+   ]
+ };
+*** End Patch
+*** Update File: server/package.json
+@@
+-  "jest": {
+-    "roots": [
+-      "<rootDir>/src"
+-    ],
+-    "testMatch": [
+-      "**/src/tests/**/*.test.ts"
+-    ],
+-    "transform": {
+-      "^.+\\.[tj]sx?$": "babel-jest"
+-    },
+-    "transformIgnorePatterns": [],
+-    "testEnvironment": "node",
+-    "extensionsToTreatAsEsm": [
+-      ".ts"
+-    ],
+-    "moduleNameMapper": {
+-      "^(\\.{1,2}/.*)\\.js$": "$1"
+-    },
+-    "moduleFileExtensions": [
+-      "js",
+-      "cjs",
+-      "ts",
+-      "json",
+-      "node"
+-    ],
+-    "testPathIgnorePatterns": [
+-      "/node_modules/",
+-      "/dist/"
+-    ],
+-    "modulePathIgnorePatterns": [
+-      "<rootDir>/dist/"
+-    ]
+-  },
++  "jest": {
++    "roots": ["<rootDir>/src"],
++    "testMatch": ["**/src/tests/**/*.test.ts"],
++    "transform": { "^.+\\.[tj]sx?$": "babel-jest" },
++    "transformIgnorePatterns": [],
++    "testEnvironment": "node",
++    "moduleFileExtensions": ["js", "cjs", "ts", "json", "node"],
++    "testPathIgnorePatterns": ["/node_modules/", "/dist/"],
++    "modulePathIgnorePatterns": ["<rootDir>/dist/"]
++  },
+*** End Patch
