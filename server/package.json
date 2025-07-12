@@ -6,21 +6,31 @@
   },
   "type": "module",
   "jest": {
-    "roots": ["<rootDir>/src"],
-    "testMatch": ["**/src/tests/**/*.test.ts"],
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/src/tests/**/*.test.ts"
+    ],
     "transform": {
       "^.+\\.[tj]sx?$": "babel-jest"
     },
     "transformIgnorePatterns": [],
-    "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".ts"],
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "moduleFileExtensions": ["ts","js","json","node"],
-    "testPathIgnorePatterns": ["/node_modules/","/dist/"],
-    "modulePathIgnorePatterns": ["<rootDir>/dist/"]
+    "moduleFileExtensions": [
+      "js",
+      "cjs",
+      "ts",
+      "json",
+      "node"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ]
   },
   "main": "index.js",
   "license": "MIT",
@@ -51,6 +61,10 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.24.0",
+    "babel-jest": "^29.7.0",
     "@eslint/js": "^9.30.1",
     "@eslint/json": "^0.12.0",
     "@prisma/client": "^6.9.0",
@@ -77,14 +91,9 @@
     "prettier": "^3.2.5",
     "prisma": "^6.11.1",
     "supertest": "^6.3.4",
-    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5",
-    "typescript-eslint": "^8.36.0",
-    "@babel/core": "^7.24.0",
-    "@babel/preset-env": "^7.24.0",
-    "@babel/preset-typescript": "^7.24.0",
-    "babel-jest": "^29.7.0"
+    "typescript-eslint": "^8.36.0"
   }
 }
