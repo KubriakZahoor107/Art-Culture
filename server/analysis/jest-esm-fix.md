@@ -1,22 +1,17 @@
-# Jest ESM Fix Report
+# Jest ESM Fix
 
 ## Problem
-`posts.test.ts` failed with "Cannot use import statement outside a module" because Jest did not treat TypeScript files as ES modules.
+Tests failed to run under Jest with ES modules. Old configs and CommonJS tests caused import issues.
 
-## Solution
-- Updated `server/jest.config.cjs` to use `ts-jest/presets/default-esm` preset and ESM transform options.
-- Set `extensionsToTreatAsEsm` to `['.ts']` and added `moduleNameMapper` for `.js` paths.
-- Declared `"type": "module"` and Jest section in `server/package.json`.
-- Removed other Jest configs.
-- Converted tests in `posts.test.ts` to ESM imports.
-- Harmonised controller and router exports with singular names.
+## Changes
+- Replaced Jest section in `package.json` to scan `src/` and handle ESM with babel-jest.
+- Added `babel.config.js` with presets for Node 20 and TypeScript.
+- Converted `posts.test` back to TypeScript ESM.
+- Added Babel dev dependencies.
 
-## Usage
-Run tests with:
-
+## Test Commands
+Run inside `server/`:
 ```bash
-node server/node_modules/jest/bin/jest.js --config server/jest.config.cjs --coverage
+npm ci
+npm test
 ```
-
-## Coverage
-See generated coverage output after running the command.

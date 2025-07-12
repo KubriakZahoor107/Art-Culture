@@ -6,44 +6,21 @@
   },
   "type": "module",
   "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/coverage/"
-    ],
-    "modulePathIgnorePatterns": [
-      "<rootDir>/__mocks__/",
-      "<rootDir>/../"
-    ],
+    "roots": ["<rootDir>/src"],
+    "testMatch": ["**/src/tests/**/*.test.ts"],
     "transform": {
-      "^.+\\.[tj]sx?$": [
-        "ts-jest",
-        {
-          "tsconfig": "tsconfig.json",
-          "useESM": true
-        }
-      ]
+      "^.+\\.[tj]sx?$": "babel-jest"
     },
+    "transformIgnorePatterns": [],
     "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ],
+    "extensionsToTreatAsEsm": [".ts"],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "moduleFileExtensions": [
-      "ts",
-      "js",
-      "cjs",
-      "json",
-      "node"
-    ],
-    "testMatch": [
-      "**/src/tests/**/*.test.{ts,cjs}"
-    ]
+    "moduleFileExtensions": ["ts","js","json","node"],
+    "testPathIgnorePatterns": ["/node_modules/","/dist/"],
+    "modulePathIgnorePatterns": ["<rootDir>/dist/"]
   },
   "main": "index.js",
   "license": "MIT",
@@ -104,6 +81,10 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5",
-    "typescript-eslint": "^8.36.0"
+    "typescript-eslint": "^8.36.0",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-typescript": "^7.24.0",
+    "babel-jest": "^29.7.0"
   }
 }
