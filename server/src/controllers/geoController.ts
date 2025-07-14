@@ -19,37 +19,58 @@ interface NominatimResult {
   lon: string
 }
 
+type AddressResult = {
+  displayName: string
+  lat: number
+  lon: number
+}
+
+type MuseumAddressResult = {
+  country: string
+  state: string
+  city: string
+  road: string
+  houseNumber: string
+  postcode: string
+  lat: number
+  lon: number
+}
+
+async function fetchNominatim(q: string): Promise<NominatimResult[]> {
+  const { data } = await axios.get<NominatimResult[]>(
+    "https://nominatim.openstreetmap.org/search",
+    {
+      params: {
+        q,
+        format: "jsonv2",
+        addressdetails: 1,
+        limit: 10,
+      },
+      headers: {
+        "User-Agent": "ArtPlayUkraine/1.0",
+      },
+    }
+  )
+  return data
+}
+
 export const searchAddress = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const query = String(req.query.q ?? "")
-    if (query.length < 3) {
-      res.json([])
+    const q = String(req.query.q ?? "").trim()
+    if (q.length < 3) {
+      res.status(200).json([])
       return
     }
 
-    const response = await axios.get<NominatimResult[]>(
-      "https://nominatim.openstreetmap.org/search",
-      {
-        params: {
-          q: query,
-          format: "jsonv2",
-          addressdetails: 1,
-          limit: 10,
-        },
-        headers: {
-          "User-Agent": "ArtPlayUkraine/1.0",
-        },
-      }
-    )
-
-    const processedData = response.data.map((item) => {
+    const results = await fetchNominatim(q)
+    const processed: AddressResult[] = results.map((item) => {
       const addr = item.address ?? {}
       const road = addr.road ?? ""
-      const house_number = addr.house_number ?? ""
+      const houseNumberRaw = addr.house_number ?? ""
       const city = addr.city ?? addr.town ?? addr.village ?? ""
       const state = addr.state ?? ""
       const postcode = addr.postcode ?? ""
@@ -60,9 +81,9 @@ export const searchAddress = async (
           : `вулиця ${road}`
         : ""
 
-      const display_name = [
+      const displayName = [
         roadFormatted,
-        house_number.toUpperCase(),
+        houseNumberRaw.toUpperCase(),
         city,
         state,
         postcode || "Нема індекса",
@@ -71,13 +92,13 @@ export const searchAddress = async (
         .join(", ")
 
       return {
-        display_name,
-        lat: item.lat,
-        lon: item.lon,
+        displayName,
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
       }
     })
 
-    res.json(processedData)
+    res.status(200).json(processed)
   } catch (err) {
     console.error("Error fetching address:", err)
     next(err)
@@ -90,31 +111,17 @@ export const searchMuseumAddress = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const query = String(req.query.q ?? "")
-    if (query.length < 3) {
-      res.json([])
+    const q = String(req.query.q ?? "").trim()
+    if (q.length < 3) {
+      res.status(200).json([])
       return
     }
 
-    const response = await axios.get<NominatimResult[]>(
-      "https://nominatim.openstreetmap.org/search",
-      {
-        params: {
-          q: query,
-          format: "jsonv2",
-          addressdetails: 1,
-          limit: 10,
-        },
-        headers: {
-          "User-Agent": "ArtPlayUkraine/1.0",
-        },
-      }
-    )
-
-    const processedData = response.data.map((item) => {
+    const results = await fetchNominatim(q)
+    const processed: MuseumAddressResult[] = results.map((item) => {
       const addr = item.address ?? {}
       const road = addr.road ?? ""
-      const house_number = addr.house_number ?? ""
+      const houseNumberRaw = addr.house_number ?? ""
       const city = addr.city ?? addr.town ?? addr.village ?? ""
       const state = addr.state ?? ""
       const postcode = addr.postcode ?? ""
@@ -131,16 +138,17 @@ export const searchMuseumAddress = async (
         state,
         city,
         road: roadFormatted,
-        house_number: house_number.toUpperCase(),
+        houseNumber: houseNumberRaw.toUpperCase(),
         postcode,
-        lat: item.lat,
-        lon: item.lon,
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
       }
     })
 
-    res.json(processedData)
+    res.status(200).json(processed)
   } catch (err) {
     console.error("Error fetching museum address:", err)
     next(err)
   }
 }
+

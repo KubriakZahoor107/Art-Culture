@@ -2,6 +2,7 @@
 
 import express from "express"
 import { body } from "express-validator"
+
 import {
   createProduct,
   deleteProduct,
@@ -15,32 +16,31 @@ import {
   getUserProducts,
   updateProduct,
 } from "../controllers/productController.js"
+
 import authenticateToken from "../middleware/authMiddleware.js"
-import uploadPaintings from "../middleware/productImageUploader.js"
-import authorize from "../middleware/roleMIddleware.js"
+import uploadPaintings from "../middleware/productImageUploader.js"       // перевірте, що це вірний файл
+import authorize from "../middleware/roleMiddleware.js"
+
 const router = express.Router()
 
-// Create a new product (only accessible by MUSEUM and CREATOR roles)
+// CREATE — лише MUSEUM, CREATOR або ADMIN, до 7 зображень
 router.post(
   "/",
-
   authenticateToken,
   authorize("MUSEUM", "CREATOR", "ADMIN"),
   uploadPaintings.array("productImages", 7),
-  // Maximum of 7 images
   [
-    body("title_en").notEmpty().withMessage("Title  is required"),
-    body("description_en").notEmpty().withMessage("Description  is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок "),
-    body("description_uk").notEmpty().withMessage("Потрібен опис "),
+    body("title_en").notEmpty().withMessage("Title is required"),
+    body("description_en").notEmpty().withMessage("Description is required"),
+    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
+    body("description_uk").notEmpty().withMessage("Потрібен опис"),
     body("specs").optional().isString(),
   ],
-  createProduct,
+  createProduct
 )
 
+// READ
 router.get("/creators-products", getCreatorProducts)
-
-// Get all products
 router.get("/", getProducts)
 router.get("/my-products", authenticateToken, getUserProducts)
 router.get("/author/:authorId", getProductByAuthorId)
@@ -49,6 +49,7 @@ router.get("/museum/:museumId", getProductByMuseumId)
 router.get("/exproducts", getProductByExhibitionId)
 router.get("/:productId", getProductById)
 
+// UPDATE — до 7 зображень можна оновити
 router.put(
   "/:id",
   authenticateToken,
@@ -61,8 +62,10 @@ router.put(
     body("specs_en").optional().isString(),
     body("specs_uk").optional().isString(),
   ],
-  updateProduct,
+  updateProduct
 )
 
+// DELETE
 router.delete("/:id", authenticateToken, deleteProduct)
+
 export default router

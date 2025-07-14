@@ -3,13 +3,34 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": [
+      "node"
+    ],
     "allowJs": false,
     "resolveJsonModule": true,
     "outDir": "dist",
     "isolatedModules": true,
     "target": "ES2022",
-    "strict": true
+    "strict": true,
+    // --- КЛЮЧОВІ ЗМІНИ ТУТ ---
+    "baseUrl": "./src", // 1. Встановлюємо "src" як базову теку
+    "paths": {
+      "@/*": [
+        "*"
+      ] // 2. Створюємо псевдонім "@" для шляхів з "src"
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types" // 3. Додаємо теку для ваших глобальних типів
+    ]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "src/**/*.ts",
+    "src/types/**/*.d.ts" // Додаємо, щоб TypeScript точно бачив ваші типи
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }

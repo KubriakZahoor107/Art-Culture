@@ -1,5 +1,3 @@
-// File: server/src/controllers/adminPostsController.ts
-
 import prisma from "../prismaClient.js";
 import { body, validationResult } from "express-validator";
 import type { Request, Response, NextFunction, Router } from "express";
@@ -9,32 +7,26 @@ export const getAllAdminPosts = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
-            return;
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // Пагінація і сортування
+        // Пагинация и сортировка
         const page = parseInt((req.query.page as string) ?? "1", 10);
         let pageSize = parseInt((req.query.pageSize as string) ?? "20", 10);
         const orderBy = (req.query.orderBy as string) ?? "createdAt";
         const orderDir = (req.query.orderDir as "asc" | "desc") ?? "desc";
 
-        const validColumns: [string, "asc" | "desc"][] = [
-            ["createdAt", "desc"],
-            ["title", "asc"],
-            ["status", "asc"],
-        ];
-        if (!validColumns.some(([col]) => col === orderBy)) {
-            res.status(400).json({ error: "Invalid sort column" });
-            return;
+        const validColumns: string[] = ["createdAt", "title", "status"];
+        if (!validColumns.includes(orderBy)) {
+            return res.status(400).json({ error: "Invalid sort column" });
         }
         if (pageSize > 20) pageSize = 20;
 
-        // Фільтр по автору та статусу
+        // Фильтр по автору и статусу
         const filter: Record<string, any> = {};
         if (req.query.authorId) {
             const authorId = parseInt(req.query.authorId as string, 10);
@@ -50,9 +42,9 @@ export const getAllAdminPosts = async (
             orderBy: { [orderBy]: orderDir },
         });
 
-        res.json({ data: posts });
+        return res.json({ data: posts });
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -60,16 +52,16 @@ export const getPendingPosts = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
     try {
         const posts = await prisma.post.findMany({
             where: { status: "PENDING" },
             include: { author: { select: { id: true, email: true } } },
             orderBy: { createdAt: "desc" },
         });
-        res.json(posts);
+        return res.json(posts);
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -77,16 +69,16 @@ export const approvePost = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
     try {
         const postId = parseInt(req.params.id, 10);
         const updated = await prisma.post.update({
             where: { id: postId },
             data: { status: "APPROVED" },
         });
-        res.json(updated);
+        return res.json(updated);
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -94,16 +86,16 @@ export const rejectPost = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
     try {
         const postId = parseInt(req.params.id, 10);
         const updated = await prisma.post.update({
             where: { id: postId },
             data: { status: "REJECTED" },
         });
-        res.json(updated);
+        return res.json(updated);
     } catch (error) {
-        next(error);
+        return next(error);
     }
 };
 
@@ -122,15 +114,9 @@ export const registerAdminPostRoutes = (router: Router): void => {
         [
             body("page").optional().isInt({ min: 1 }),
             body("pageSize").optional().isInt({ min: 1, max: 20 }),
-            body("orderBy")
-                .optional()
-                .isIn(["createdAt", "title", "status"]),
+            body("orderBy").optional().isIn(["createdAt", "title", "status"]),
             body("orderDir").optional().isIn(["asc", "desc"]),
-            body("status").optional().isIn([
-                "PENDING",
-                "APPROVED",
-                "REJECTED",
-            ]),
+            body("status").optional().isIn(["PENDING", "APPROVED", "REJECTED"]),
             body("authorId").optional().isInt(),
         ],
         getAllAdminPosts

@@ -1,7 +1,17 @@
+// /Users/konstantinkubriak/Desktop/Art-Culture/server/src/controllers/searchController.ts
+
+import { Request, Response, NextFunction } from "express"
 import prisma from "../prismaClient.js"
-export const searchAuthors = async (req, res, next) => {
+import { AuthRequest } from "../middleware/authMiddleware.js"
+
+// Search authors with role CREATOR
+export const searchAuthors = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q || ""
+    const query = (req.query.q as string) || ""
 
     const authors = await prisma.user.findMany({
       where: {
@@ -18,8 +28,9 @@ export const searchAuthors = async (req, res, next) => {
         bio: true,
         images: true,
       },
-      take: 10, //Limit request
+      take: 10,
     })
+
     res.json({ authors })
   } catch (error) {
     console.error("Error searching for authors:", error)
@@ -27,12 +38,16 @@ export const searchAuthors = async (req, res, next) => {
   }
 }
 
-export const searchPainting = async (req, res, next) => {
+// Search paintings by optional authorId
+export const searchPainting = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q || ""
-    const authorId = req.params.authorId
-      ? parseInt(req.params.authorId, 10)
-      : null
+    const query = (req.query.q as string) || ""
+    const authorIdParam = req.params.authorId
+    const authorId = authorIdParam ? parseInt(authorIdParam, 10) : undefined
 
     const paintings = await prisma.product.findMany({
       where: {
@@ -45,7 +60,7 @@ export const searchPainting = async (req, res, next) => {
               { description_uk: { contains: query.toLowerCase() } },
             ],
           },
-          authorId ? { authorId: authorId } : {},
+          ...(authorId !== undefined ? [{ authorId }] : []),
         ],
       },
       include: {
@@ -60,7 +75,7 @@ export const searchPainting = async (req, res, next) => {
           },
         },
       },
-      take: 10, //Limit request
+      take: 10,
     })
 
     res.json({ paintings })
@@ -70,9 +85,14 @@ export const searchPainting = async (req, res, next) => {
   }
 }
 
-export const searchMuseum = async (req, res, next) => {
+// Search museums with role MUSEUM
+export const searchMuseum = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q || ""
+    const query = (req.query.q as string) || ""
 
     const museums = await prisma.user.findMany({
       where: {
@@ -90,7 +110,7 @@ export const searchMuseum = async (req, res, next) => {
         bio: true,
         images: true,
         country: true,
-        house_number: true,
+        houseNumber: true,   // <-- corrected
         lat: true,
         lon: true,
         postcode: true,
@@ -98,8 +118,9 @@ export const searchMuseum = async (req, res, next) => {
         street: true,
         city: true,
       },
-      take: 10, //Limit request
+      take: 10,
     })
+
     res.json({ museums })
   } catch (error) {
     console.error("Error searching for museums:", error)
@@ -107,18 +128,22 @@ export const searchMuseum = async (req, res, next) => {
   }
 }
 
-// controllers/searchController.js
-export const searchAll = async (req, res, next) => {
+// Comprehensive search across authors, products, posts, exhibitions
+export const searchAll = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    const query = req.query.q || ""
+    const query = (req.query.q as string) || ""
+    const ql = query.toLowerCase()
 
-    // Search for authors (fixing the typo: "contains" instead of "contain")
-    const searchAllAuthors = await prisma.user.findMany({
+    const searchAllAuthors = prisma.user.findMany({
       where: {
-        role: { in: ["CREATOR", "MUSEUM", "EXHIBITION", "AUTHOR"] }, // Removed duplicate "MUSEUM"
+        role: { in: ["CREATOR", "MUSEUM", "EXHIBITION", "AUTHOR"] },
         OR: [
-          { email: { contains: query.toLowerCase() } },
-          { title: { contains: query.toLowerCase() } },
+          { email: { contains: ql } },
+          { title: { contains: ql } },
         ],
       },
       select: {
@@ -132,19 +157,13 @@ export const searchAll = async (req, res, next) => {
       take: 10,
     })
 
-    // Search for products (remove reference to undefined museumId)
-    const searchAllProduct = await prisma.product.findMany({
+    const searchAllProduct = prisma.product.findMany({
       where: {
-        AND: [
-          {
-            OR: [
-              { title_en: { contains: query.toLowerCase() } },
-              { description_en: { contains: query.toLowerCase() } },
-              { title_uk: { contains: query.toLowerCase() } },
-              { description_uk: { contains: query.toLowerCase() } },
-            ],
-          },
-          // Remove or modify the authorId condition if not needed
+        OR: [
+          { title_en: { contains: ql } },
+          { description_en: { contains: ql } },
+          { title_uk: { contains: ql } },
+          { description_uk: { contains: ql } },
         ],
       },
       include: {
@@ -162,13 +181,13 @@ export const searchAll = async (req, res, next) => {
       take: 10,
     })
 
-    const searchAllPosts = await prisma.post.findMany({
+    const searchAllPosts = prisma.post.findMany({
       where: {
         OR: [
-          { title_en: { contains: query.toLowerCase() } },
-          { content_en: { contains: query.toLowerCase() } },
-          { title_uk: { contains: query.toLowerCase() } },
-          { content_uk: { contains: query.toLowerCase() } },
+          { title_en: { contains: ql } },
+          { content_en: { contains: ql } },
+          { title_uk: { contains: ql } },
+          { content_uk: { contains: ql } },
         ],
       },
       select: {
@@ -180,12 +199,12 @@ export const searchAll = async (req, res, next) => {
       take: 10,
     })
 
-    const searchAllExhibitions = await prisma.exhibition.findMany({
+    const searchAllExhibitions = prisma.exhibition.findMany({
       include: {
         images: true,
         museum: {
           include: {
-            museum_logo_image: true,
+            museumLogoImage: true,   // исправлено название поля
           },
         },
         createdBy: {
@@ -206,14 +225,17 @@ export const searchAll = async (req, res, next) => {
       },
     })
 
-    res.json({
+    const [authors, products, posts, exhibitions] = await Promise.all([
       searchAllAuthors,
       searchAllProduct,
       searchAllPosts,
       searchAllExhibitions,
-    })
+    ])
+
+    res.json({ authors, products, posts, exhibitions })
   } catch (error) {
-    console.error("error in searchAll", error)
+    console.error("Error in searchAll:", error)
     next(error)
   }
 }
+

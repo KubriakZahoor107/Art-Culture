@@ -34,8 +34,8 @@ app.use(helmet({
     }
 }));
 app.use(cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true
+    origin: 'http://localhost:3000',
+    credentials: true,
 }));
 app.use(rateLimit({
     windowMs: 2_000,
@@ -58,6 +58,9 @@ app.use('/api/art-terms', artTermsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/geo', geoRoutes);
 app.use('/api/like', likeRoutes);
+app.get('/health', (_req, res) => {
+    res.json({ status: 'OK' });
+});
 // Обробник помилок наприкінці
 app.use(errorHandler);
 export default app;

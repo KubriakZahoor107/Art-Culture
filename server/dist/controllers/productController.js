@@ -11,7 +11,7 @@ export const createProduct = async (req, res, next) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const { title_en, title_uk, description_en, description_uk, specs_en, specs_uk, size, dateofcreation, style_en, style_uk, technique_en, technique_uk, } = req.body;
+        const { title_en, title_uk, description_en, description_uk, specs_en, specs_uk, size, dateOfCreation, style_en, style_uk, technique_en, technique_uk, } = req.body;
         const userId = req.user.id;
         console.log("reg.user", req.user);
         const images = req.files.map((file) => ({
@@ -26,7 +26,7 @@ export const createProduct = async (req, res, next) => {
                 specs_en,
                 specs_uk,
                 size,
-                dateofcreation,
+                dateOfCreation,
                 style_en,
                 style_uk,
                 technique_en,
@@ -285,7 +285,7 @@ export const getProductByMuseumId = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { title_en, title_uk, description_en, description_uk, specs_en, specs_uk, size, dateofcreation, style_en, style_uk, technique_en, technique_uk, } = req.body;
+        const { title_en, title_uk, description_en, description_uk, specs_en, specs_uk, size, dateOfCreation, style_en, style_uk, technique_en, technique_uk, } = req.body;
         const userId = req.user.id;
         // Verify ownership
         const product = await prisma.product.findUnique({
@@ -325,7 +325,7 @@ export const updateProduct = async (req, res, next) => {
                 specs_en,
                 specs_uk,
                 size,
-                dateofcreation,
+                dateOfCreation,
                 style_en,
                 style_uk,
                 technique_en,

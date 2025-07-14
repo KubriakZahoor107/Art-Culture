@@ -1,4 +1,3 @@
-// server/src/controllers/postController.ts
 import { Request, Response, NextFunction } from "express";
 import multer, { FileFilterCallback } from "multer";
 import fs from "fs";
@@ -20,7 +19,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename(req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
@@ -68,8 +67,8 @@ export const createPost = async (
         content_en,
         content_uk,
         images: imageUrl,
-        author: { connect: { id: userId } },
         status: "PENDING",
+        author: { connect: { id: userId } },
       },
       include: {
         author: { select: { id: true, email: true, title: true } },
@@ -86,24 +85,27 @@ export const createPost = async (
 // GET ALL APPROVED POSTS
 // ————————————————
 export const getAllPosts = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { authorId } = _req.query;
+    const authorId = req.query.authorId as string | undefined;
     const filter = authorId
-      ? { authorId: parseInt(authorId as string, 10) }
+      ? { authorId: parseInt(authorId, 10) }
       : {};
+
     const posts = await prisma.post.findMany({
       where: { status: "APPROVED", ...filter },
       include: { author: { select: { id: true, email: true, title: true } } },
       orderBy: { createdAt: "desc" },
     });
+
     res.json(posts);
-  } catch (err) {
-    if ((err as any).code === 'P2021') {
-      return res.json([]);
+  } catch (err: any) {
+    if (err.code === 'P2021') {
+      res.json([]);
+      return;
     }
     next(err);
   }
@@ -113,16 +115,17 @@ export const getAllPosts = async (
 // GET POST BY ID
 // ————————————————
 export const getPostById = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const id = parseInt(_req.params.id, 10);
+    const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid post ID" });
       return;
     }
+
     const post = await prisma.post.findUnique({
       where: { id },
       include: { author: { select: { id: true, email: true, title: true } } },
@@ -131,6 +134,7 @@ export const getPostById = async (
       res.status(404).json({ error: "Post not found" });
       return;
     }
+
     res.json(post);
   } catch (err) {
     next(err);
@@ -177,7 +181,9 @@ export const updatePost = async (
         content_uk: req.body.content_uk,
         images: imageUrl,
       },
-      include: { author: { select: { id: true, email: true, title: true } } },
+      include: {
+        author: { select: { id: true, email: true, title: true } },
+      },
     });
 
     res.json(updated);
@@ -224,17 +230,18 @@ export const deletePost = async (
 // GET POSTS BY ROLE
 // ————————————————
 export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSEUM') {
-  return async (_req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const posts = await prisma.post.findMany({
         where: { author: { role } },
         include: { author: { select: { id: true, email: true, title: true } } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       });
       res.json({ posts });
     } catch (err: any) {
       if (err.code === 'P2021') {
-        return res.json({ posts: [] });
+        res.json({ posts: [] });
+        return;
       }
       logger.error(`Error fetching ${role} posts:`, err);
       next(err);
@@ -242,38 +249,41 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
   };
 }
 
-export const getCreatorsPosts = makeRoleFinder("CREATOR");
-export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
-export const getMuseumsPost = makeRoleFinder("MUSEUM");
+export const getCreatorsPosts = makeRoleFinder('CREATOR');
+export const getAuthorsPosts = makeRoleFinder('AUTHOR');
+export const getExhibitionsPosts = makeRoleFinder('EXHIBITION');
+export const getMuseumsPosts = makeRoleFinder('MUSEUM');
 
-// ———————————————
+// ————————————————
 // GET POSTS BY ENTITY ID
-// ———————————————
-export function makeByAuthorId(param: "authorId" | "exhibitionId" | "museumId") {
+// ————————————————
+export function makeByParamFinder(
+  param: 'authorId' | 'exhibitionId' | 'museumId',
+  alias: string
+) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseInt(req.params[param], 10);
       if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
       const posts = await prisma.post.findMany({
         where: { [param]: id } as any,
         include: { author: { select: { id: true, email: true, title: true, role: true } } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       });
-      res.json({ posts });
+      res.json({ [alias]: posts });
     } catch (err: any) {
-      if (err.code === "P2021") {
-        return res.json({ posts: [] });
+      if (err.code === 'P2021') {
+        res.json({ [alias]: [] });
+        return;
       }
       next(err);
     }
   };
 }
 
-export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostByMuseumId = makeByAuthorId("museumId");
-
+export const getPostsByAuthorId = makeByParamFinder('authorId', 'postsByAuthor');
+export const getPostsByExhibitionId = makeByParamFinder('exhibitionId', 'postsByExhibition');
+export const getPostsByMuseumId = makeByParamFinder('museumId', 'postsByMuseum');

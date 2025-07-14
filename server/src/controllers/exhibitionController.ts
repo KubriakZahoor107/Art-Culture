@@ -1,11 +1,11 @@
 // server/src/controllers/exhibitionController.ts
-
-import { Request, Response, NextFunction, Express } from 'express';
-import prisma from '../prismaClient.js';
-import logger from '../utils/logging.js';
+import { Request, Response, NextFunction } from 'express'
+import prisma from '../prismaClient.js'
+import logger from '../utils/logging.js'
+import { AuthRequest } from '../middleware/authMiddleware.js'
 
 export const createExhibitions = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -27,33 +27,32 @@ export const createExhibitions = async (
       museumId,
       artistIds,
       paintingIds,
-    } = req.body as Record<string, any>;
+    } = req.body as Record<string, any>
 
     // Валідація масивів ID
     if (!Array.isArray(artistIds) || artistIds.some((id) => isNaN(id))) {
-      res.status(400).json({ errors: [{ msg: 'Invalid artist IDs' }] });
-      return;
+      res.status(400).json({ errors: [{ msg: 'Invalid artist IDs' }] })
+      return
     }
     if (!Array.isArray(paintingIds) || paintingIds.some((id) => isNaN(id))) {
-      res.status(400).json({ errors: [{ msg: 'Invalid painting IDs' }] });
-      return;
+      res.status(400).json({ errors: [{ msg: 'Invalid painting IDs' }] })
+      return
     }
 
-    const parsedMuseumId = parseInt(museumId, 10);
+    const parsedMuseumId = parseInt(museumId, 10)
     if (isNaN(parsedMuseumId)) {
-      res.status(400).json({ errors: [{ msg: 'Invalid museum ID' }] });
-      return;
+      res.status(400).json({ errors: [{ msg: 'Invalid museum ID' }] })
+      return
     }
 
-    const userId = (req as Request & { user: { id: number } }).user.id;
+    const userId = req.user!.id
 
     // Файли з Multer
-    const files = (req.files as Express.Multer.File[]) || [];
+    const files = (req.files as Express.Multer.File[]) ?? []
     const images = files.map((file) => ({
       imageUrl: `/uploads/exhibitionsImages/${file.filename}`,
-    }));
+    }))
 
-    // Створюємо експозицію
     const exhibition = await prisma.exhibition.create({
       data: {
         title_en,
@@ -73,10 +72,14 @@ export const createExhibitions = async (
         createdBy: { connect: { id: userId } },
         museum: { connect: { id: parsedMuseumId } },
         exhibitionArtists: {
-          create: artistIds.map((aid: number) => ({ artist: { connect: { id: aid } } })),
+          create: artistIds.map((aid: number) => ({
+            artist: { connect: { id: aid } },
+          })),
         },
         products: {
-          create: paintingIds.map((pid: number) => ({ product: { connect: { id: pid } } })),
+          create: paintingIds.map((pid: number) => ({
+            product: { connect: { id: pid } },
+          })),
         },
       },
       include: {
@@ -84,14 +87,17 @@ export const createExhibitions = async (
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
       },
-    });
+    })
 
-    res.status(201).json({ exhibition, message: 'Exhibition created successfully' });
+    res.status(201).json({
+      exhibition,
+      message: 'Exhibition created successfully',
+    })
   } catch (error) {
-    logger.error('Error creating exhibition:', error);
-    next(error);
+    logger.error('Error creating exhibition:', error)
+    next(error)
   }
-};
+}
 
 export const getAllExhibitions = async (
   req: Request,
@@ -106,13 +112,13 @@ export const getAllExhibitions = async (
         products: { include: { product: true } },
       },
       orderBy: { startDate: 'desc' },
-    });
-    res.json(exhibitions);
+    })
+    res.status(200).json({ exhibitions })
   } catch (error) {
-    logger.error('Error fetching all exhibitions:', error);
-    next(error);
+    logger.error('Error fetching all exhibitions:', error)
+    next(error)
   }
-};
+}
 
 export const getExhibitionById = async (
   req: Request,
@@ -120,10 +126,10 @@ export const getExhibitionById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id, 10)
     if (isNaN(id)) {
-      res.status(400).json({ error: 'Invalid exhibition ID' });
-      return;
+      res.status(400).json({ error: 'Invalid exhibition ID' })
+      return
     }
     const exhibition = await prisma.exhibition.findUnique({
       where: { id },
@@ -132,25 +138,25 @@ export const getExhibitionById = async (
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
       },
-    });
+    })
     if (!exhibition) {
-      res.status(404).json({ error: 'Exhibition not found' });
-      return;
+      res.status(404).json({ error: 'Exhibition not found' })
+      return
     }
-    res.json(exhibition);
+    res.status(200).json({ exhibition })
   } catch (error) {
-    logger.error('Error fetching exhibition by ID:', error);
-    next(error);
+    logger.error('Error fetching exhibition by ID:', error)
+    next(error)
   }
-};
+}
 
 export const getMyExhibitions = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = (req as Request & { user: { id: number } }).user.id;
+    const userId = req.user!.id
     const exhibitions = await prisma.exhibition.findMany({
       where: { createdById: userId },
       include: {
@@ -159,13 +165,13 @@ export const getMyExhibitions = async (
         products: { include: { product: true } },
       },
       orderBy: { startDate: 'desc' },
-    });
-    res.json(exhibitions);
+    })
+    res.status(200).json({ exhibitions })
   } catch (error) {
-    logger.error('Error fetching my exhibitions:', error);
-    next(error);
+    logger.error('Error fetching my exhibitions:', error)
+    next(error)
   }
-};
+}
 
 export const getProductsByExhibitionId = async (
   req: Request,
@@ -173,25 +179,26 @@ export const getProductsByExhibitionId = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const exhibitionId = parseInt(req.params.exhibitionId, 10);
+    const exhibitionId = parseInt(req.params.exhibitionId, 10)
     if (isNaN(exhibitionId)) {
-      res.status(400).json({ error: 'Invalid exhibition ID' });
-      return;
+      res.status(400).json({ error: 'Invalid exhibition ID' })
+      return
     }
     const record = await prisma.exhibition.findUnique({
       where: { id: exhibitionId },
       include: { products: { include: { product: true } } },
-    });
+    })
     if (!record) {
-      res.status(404).json({ error: 'Exhibition not found' });
-      return;
+      res.status(404).json({ error: 'Exhibition not found' })
+      return
     }
-    res.json(record.products.map((p) => p.product));
+    const products = record.products.map((p) => p.product)
+    res.status(200).json({ products })
   } catch (error) {
-    logger.error('Error fetching products for exhibition:', error);
-    next(error);
+    logger.error('Error fetching products for exhibition:', error)
+    next(error)
   }
-};
+}
 
 export const updateExhibition = async (
   req: Request,
@@ -199,10 +206,10 @@ export const updateExhibition = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id, 10)
     if (isNaN(id)) {
-      res.status(400).json({ error: 'Invalid exhibition ID' });
-      return;
+      res.status(400).json({ error: 'Invalid exhibition ID' })
+      return
     }
     const updated = await prisma.exhibition.update({
       where: { id },
@@ -212,13 +219,13 @@ export const updateExhibition = async (
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
       },
-    });
-    res.json(updated);
+    })
+    res.status(200).json({ updated })
   } catch (error) {
-    logger.error('Error updating exhibition:', error);
-    next(error);
+    logger.error('Error updating exhibition:', error)
+    next(error)
   }
-};
+}
 
 export const deleteExhibition = async (
   req: Request,
@@ -226,16 +233,16 @@ export const deleteExhibition = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id, 10)
     if (isNaN(id)) {
-      res.status(400).json({ error: 'Invalid exhibition ID' });
-      return;
+      res.status(400).json({ error: 'Invalid exhibition ID' })
+      return
     }
-    await prisma.exhibition.delete({ where: { id } });
-    res.json({ message: 'Exhibition deleted successfully' });
+    await prisma.exhibition.delete({ where: { id } })
+    res.sendStatus(204)
   } catch (error) {
-    logger.error('Error deleting exhibition:', error);
-    next(error);
+    logger.error('Error deleting exhibition:', error)
+    next(error)
   }
-};
+}
 

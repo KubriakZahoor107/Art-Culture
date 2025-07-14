@@ -68,6 +68,20 @@ app.use('/api/search', searchRoutes);
 app.use('/api/geo', geoRoutes);
 app.use('/api/like', likeRoutes);
 
+// повинно бути після усіх app.use(<router>)
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: "Not Found" })
+})
+
+app.use(
+  (err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error(err)
+    const status = err.status || 500
+    const message = err.message || "Server Error"
+    res.status(status).json({ error: message })
+  }
+)
+
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'OK' });
 });
