@@ -212,5 +212,5 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
 
 export const getCreatorsPosts = makeRoleFinder('CREATOR')
 export const getAuthorsPosts = makeRoleFinder('AUTHOR')
-export const getExhibitionsPosts = makeRoleFinder('EXHIBITION')
-export const getMuseumsPosts = makeRoleFinder('MUSEUM')
+export const getExhibitionsPost = makeRoleFinder('EXHIBITION')
+export const getMuseumsPost = makeRoleFinder('MUSEUM')

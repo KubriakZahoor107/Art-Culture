@@ -10,8 +10,8 @@ import {
   deletePost,
   getCreatorsPosts,
   getAuthorsPosts,
-  getExhibitionsPosts,
-  getMuseumsPosts,
+  getExhibitionsPost,
+  getMuseumsPost,
   getPostsByAuthorId,
   getPostsByExhibitionId,
   getPostsByMuseumId,
@@ -33,8 +33,8 @@ router.get("/authors", getAuthorsPosts)
 router.get("/author/:authorId", getPostsByAuthorId)
 
 // Фільтрація по ролі exhibition та museum
-router.get("/exhibitions", getExhibitionsPosts)
-router.get("/museums", getMuseumsPosts)
+router.get("/exhibitions", getExhibitionsPost)
+router.get("/museums", getMuseumsPost)
 
 // Фільтрація по конкретному exhibition або museum
 router.get("/exhibition/:exhibitionId", getPostsByExhibitionId)
