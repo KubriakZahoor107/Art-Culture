@@ -2,7 +2,7 @@
 
 import { Request, Response, NextFunction } from "express"
 import prisma from "../prismaClient.js"
-import { AuthRequest } from "../middleware/authMiddleware.js"
+
 
 // Search authors with role CREATOR
 export const searchAuthors = async (

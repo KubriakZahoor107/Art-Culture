@@ -1,18 +1,18 @@
+
 // server/src/routes/exhibitionRoutes.ts
 
 import { Router, Request, Response, NextFunction } from "express";
 import asyncHandler from "express-async-handler";
 import { body, validationResult } from "express-validator";
-
-import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
+import authenticateToken from "../middleware/authMiddleware.js";
+import authorize from "../middleware/roleMiddleware.js";
 import uploadExhibition from "../middleware/exhibitionImageUploader.js";
-
 import {
   createExhibitions,
   getAllExhibitions,
   getExhibitionById,
   getMyExhibitions,
-  getProductsByExhibitionId,    // <- тут була єдина форма
+  getProductsByExhibitionId,
   updateExhibition,
   deleteExhibition,
 } from "../controllers/exhibitionController.js";
@@ -28,24 +28,21 @@ router.post(
   authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"),
   uploadExhibition.upload,
   uploadExhibition.processImages,
-
+  // Валідація полів
   body("title_en").notEmpty().withMessage("English title is required"),
   body("title_uk").notEmpty().withMessage("Ukrainian title is required"),
   body("description_en").notEmpty().withMessage("English description is required"),
   body("description_uk").notEmpty().withMessage("Ukrainian description is required"),
-
-  // ручна перевірка express-validator
-  (req: Request, res: Response, next: NextFunction): void => {
+  body("date").isISO8601().withMessage("Date must be valid"),
+  // Ручна перевірка результатів валідації
+  (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
+      return res.status(400).json({ errors: errors.array() });
     }
     next();
   },
-
-  // ваш контролер
-  asyncHandler(createExhibitions),
+  asyncHandler(createExhibitions)
 );
 
 /**
@@ -59,7 +56,7 @@ router.get("/", asyncHandler(getAllExhibitions));
 router.get(
   "/my-exhibitions",
   authenticateToken,
-  asyncHandler(getMyExhibitions),
+  asyncHandler(getMyExhibitions)
 );
 
 /**
@@ -67,7 +64,7 @@ router.get(
  */
 router.get(
   "/:exhibitionId/products",
-  asyncHandler(getProductsByExhibitionId),  // <- узгоджена назва
+  asyncHandler(getProductsByExhibitionId)
 );
 
 /**
@@ -84,7 +81,6 @@ router.put(
   authorize("MUSEUM", "CREATOR", "ADMIN", "EXHIBITION"),
   uploadExhibition.upload,
   uploadExhibition.processImages,
-
   body("title_en").notEmpty().withMessage("Title is required"),
   body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
   body("description_en").notEmpty().withMessage("Description is required"),
@@ -105,18 +101,14 @@ router.put(
   body("time").optional().isString(),
   body("startDate").optional().isString(),
   body("endDate").optional().isString(),
-
-  // ручна перевірка express-validator
-  (req: Request, res: Response, next: NextFunction): void => {
+  (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      res.status(400).json({ errors: errors.array() });
-      return;
+      return res.status(400).json({ errors: errors.array() });
     }
     next();
   },
-
-  asyncHandler(updateExhibition),
+  asyncHandler(updateExhibition)
 );
 
 /**
@@ -125,7 +117,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateToken,
-  asyncHandler(deleteExhibition),
+  asyncHandler(deleteExhibition)
 );
 
 export default router;

@@ -1,42 +1,32 @@
-// src/routes/productRoutes.js
+// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/routes/productRoutes.ts
 
 import express from "express"
-import { body } from "express-validator"
-
 import {
   createProduct,
-  deleteProduct,
-  getCreatorProducts,
-  getMuseumProducts,
-  getProductByAuthorId,
-  getProductByExhibitionId,
-  getProductById,
-  getProductByMuseumId,
   getProducts,
+  getProductById,
   getUserProducts,
+  getCreatorProducts,
+  getProductByAuthorId,
+  getMuseumProducts,
+  getProductByMuseumId,
+  getProductByExhibitionId,
   updateProduct,
+  // deleteProduct,  // Видалено, бо у контролері немає експорту deleteProduct
 } from "../controllers/productController.js"
-
 import authenticateToken from "../middleware/authMiddleware.js"
-import uploadPaintings from "../middleware/productImageUploader.js"       // перевірте, що це вірний файл
 import authorize from "../middleware/roleMiddleware.js"
+import uploadPaintings from "../middleware/productImageUploader.js"
 
 const router = express.Router()
 
-// CREATE — лише MUSEUM, CREATOR або ADMIN, до 7 зображень
+// CREATE (Museum & Creator)
 router.post(
   "/",
   authenticateToken,
   authorize("MUSEUM", "CREATOR", "ADMIN"),
   uploadPaintings.array("productImages", 7),
-  [
-    body("title_en").notEmpty().withMessage("Title is required"),
-    body("description_en").notEmpty().withMessage("Description is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
-    body("description_uk").notEmpty().withMessage("Потрібен опис"),
-    body("specs").optional().isString(),
-  ],
-  createProduct
+  createProduct,
 )
 
 // READ
@@ -49,23 +39,16 @@ router.get("/museum/:museumId", getProductByMuseumId)
 router.get("/exproducts", getProductByExhibitionId)
 router.get("/:productId", getProductById)
 
-// UPDATE — до 7 зображень можна оновити
+// UPDATE
 router.put(
   "/:id",
   authenticateToken,
+  authorize("MUSEUM", "CREATOR", "ADMIN"),
   uploadPaintings.array("productImages", 7),
-  [
-    body("title_en").notEmpty().withMessage("Title is required"),
-    body("description_en").notEmpty().withMessage("Description is required"),
-    body("title_uk").notEmpty().withMessage("Потрібен заголовок"),
-    body("description_uk").notEmpty().withMessage("Потрібен опис"),
-    body("specs_en").optional().isString(),
-    body("specs_uk").optional().isString(),
-  ],
-  updateProduct
+  updateProduct,
 )
 
-// DELETE
-router.delete("/:id", authenticateToken, deleteProduct)
+// DELETE (якщо в контролері захочете додати видалення — розкоментуйте)
+// router.delete("/:id", authenticateToken, deleteProduct)
 
 export default router

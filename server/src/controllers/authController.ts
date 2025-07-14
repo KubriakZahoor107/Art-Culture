@@ -1,91 +1,109 @@
-// server/src/controllers/adminController.ts
-import { Response, NextFunction } from 'express';
-import prisma from '../prismaClient.js';
-import { AuthRequest } from '../middleware/authMiddleware.js';
+// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/controllers/authController.ts
 
-export async function getAllUsers(
-  req: AuthRequest,
+import { Request, Response, NextFunction } from 'express'
+import prisma from '../prismaClient.js'
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
+
+/**
+ * Реєстрація нового користувача
+ */
+export async function register(
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        title: true,
-        createdAt: true
-      }
-    });
-    res.status(200).json({ users });
-  } catch (error) {
-    next(error);
+    // Приклад логіки:
+    // const { email, password, role } = req.body
+    // const hash = await bcrypt.hash(password, 10)
+    // const user = await prisma.user.create({ data: { email, password: hash, role } })
+    // res.status(201).json({ user })
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
-export async function getUserById(
-  req: AuthRequest,
+/**
+ * Логін користувача
+ */
+export async function login(
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = Number(req.params.id);
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        title: true,
-        bio: true,
-        country: true,
-        city: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
-
-    if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    res.status(200).json({ user });
-  } catch (error) {
-    next(error);
+    // Ваша логіка логіну
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
-export async function updateUser(
-  req: AuthRequest,
+/**
+ * Запит на скидання пароля
+ */
+export async function resetPassword(
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = Number(req.params.id);
-    const { email, role, title, bio, country, city } = req.body;
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { email, role, title, bio, country, city }
-    });
-    res.status(200).json({ user: updated });
-  } catch (error) {
-    next(error);
+    // Ваша логіка відновлення пароля
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
-export async function deleteUser(
-  req: AuthRequest,
+/**
+ * Підтвердження скидання пароля
+ */
+export async function resetPasswordConfirm(
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
-    const id = Number(req.params.id);
-    await prisma.user.delete({ where: { id } });
-    res.sendStatus(204);
-  } catch (error) {
-    next(error);
+    // Ваша логіка підтвердження
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
+/**
+ * Оновлення профілю поточного користувача
+ */
+export async function updateUserProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    // Ваша логіка оновлення (req.user уже заповнений middleware)
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+/**
+ * Повертає дані поточного користувача з req.user
+ */
+export function getCurrentUser(
+  req: Request,
+  res: Response
+): void {
+  if (!req.user) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  res.json({ user: req.user })
+}
+
+/**
+ * Синонім до getCurrentUser, якщо десь імпортують як getProfile
+ */
+export const getProfile = getCurrentUser

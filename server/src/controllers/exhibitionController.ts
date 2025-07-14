@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express'
 import prisma from '../prismaClient.js'
 import logger from '../utils/logging.js'
-import { AuthRequest } from '../middleware/authMiddleware.js'
+
 
 export const createExhibitions = async (
   req: AuthRequest,

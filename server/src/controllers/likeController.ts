@@ -1,7 +1,8 @@
+import { Request } from 'express';
 // server/src/controllers/likeController.ts
 import { Response, NextFunction } from "express";
 import prisma from "../prismaClient.js";
-import { AuthRequest } from "../middleware/authMiddleware.js";
+
 
 type EntityType = "post" | "product" | "exhibition" | "user" | "creator" | "museum";
 

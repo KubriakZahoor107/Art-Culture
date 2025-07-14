@@ -1,57 +1,30 @@
-// server/src/routes/adminRoutes.ts
-import { Router } from "express";
-import asyncHandler from "express-async-handler";
-import { body } from "express-validator";
+// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/routes/adminRoutes.ts
 
-// middleware
-import authenticateToken, { authorize } from "../middleware/authMiddleware.js";
-// контролери для адмін-постів
+import express from "express"
 import {
-    getAllAdminPosts,
-    getPendingPosts,
-    approvePost,
-    rejectPost,
-} from "../controllers/adminPostsController.js";
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+} from "../controllers/adminController.js"
+import authenticateToken from "../middleware/authMiddleware.js"
+import authorize from "../middleware/roleMiddleware.js"
 
-const router = Router();
+const router = express.Router()
 
-// GET /api/admin/pending-posts
-router.get(
-    "/pending-posts",
-    authenticateToken,
-    authorize("ADMIN"),
-    asyncHandler(getPendingPosts),
-);
+// Усі admin-маршрути під цим префіксом захищені
+router.use(authenticateToken, authorize("ADMIN"))
 
-// GET /api/admin/posts
-router.get(
-    "/posts",
-    authenticateToken,
-    authorize("ADMIN"),
-    body("page").optional().isInt({ min: 1 }),
-    body("pageSize").optional().isInt({ min: 1, max: 20 }),
-    body("orderBy").optional().isIn(["createdAt", "title", "status"]),
-    body("orderDir").optional().isIn(["asc", "desc"]),
-    body("status").optional().isIn(["PENDING", "APPROVED", "REJECTED"]),
-    body("authorId").optional().isInt(),
-    asyncHandler(getAllAdminPosts),
-);
+// GET /admin/users — повернути всіх користувачів
+router.get("/admin/users", getAllUsers)
 
-// PATCH /api/admin/posts/:id/approve
-router.patch(
-    "/posts/:id/approve",
-    authenticateToken,
-    authorize("ADMIN"),
-    asyncHandler(approvePost),
-);
+// GET /admin/users/:id — повернути одного
+router.get("/admin/users/:id", getUserById)
 
-// PATCH /api/admin/posts/:id/reject
-router.patch(
-    "/posts/:id/reject",
-    authenticateToken,
-    authorize("ADMIN"),
-    asyncHandler(rejectPost),
-);
+// PUT /admin/users/:id — оновити
+router.put("/admin/users/:id", updateUser)
 
-export default router;
+// DELETE /admin/users/:id — видалити
+router.delete("/admin/users/:id", deleteUser)
 
+export default router
