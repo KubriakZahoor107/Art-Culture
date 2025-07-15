@@ -164,7 +164,7 @@ export const getCreatorById = async (
     const creator = await prisma.user.findUnique({
       where: { id: creatorId },
       include: {
-        products: {
+        Product_Product_authorIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -280,7 +280,7 @@ export const getAuthorById = async (
     const author = await prisma.user.findUnique({
       where: { id: authorId },
       include: {
-        products: {
+        Product_Product_authorIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -323,7 +323,7 @@ export const getMuseums = async (
         street: true,
         houseNumber: true,       // corrected from house_number
         postcode: true,
-        museumLogoImage: {       // corrected from museum_logo_image
+        museum_logo_images: {
           select: { imageUrl: true },
         },
       },
@@ -352,8 +352,8 @@ export const getMuseumById = async (
     const museum = await prisma.user.findUnique({
       where: { id: museumId },
       include: {
-        museumLogoImage: true,   // corrected
-        products: {
+        museum_logo_images: true,
+        Product_Product_museumIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -414,12 +414,6 @@ export const getExhibitionById = async (
 
     const exhibition = await prisma.user.findUnique({
       where: { id: exhibitionId },
-      include: {
-        products: {
-          include: { images: true },
-          orderBy: { createdAt: "desc" },
-        },
-      },
     })
 
     if (!exhibition || exhibition.role !== "EXHIBITION") {
