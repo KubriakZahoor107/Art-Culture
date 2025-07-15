@@ -5,49 +5,13 @@
     "node": ">=20.0.0"
   },
   "type": "module",
-  "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "testMatch": [
-      "**/src/tests/**/*.test.ts"
-    ],
-    "transform": {
-      "^.+\\.[tj]sx?$": "babel-jest"
-    },
-    "transformIgnorePatterns": [],
-    "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ],
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "moduleFileExtensions": [
-      "js",
-      "cjs",
-      "ts",
-      "json",
-      "node"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/"
-    ],
-    "modulePathIgnorePatterns": [
-      "<rootDir>/dist/"
-    ]
-  },
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --ext ts --exec \"TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm src/index.ts\"",
-    "prisma": "prisma",
-    "lint": "eslint \"src/**/*.{ts,js}\"",
-    "format": "prettier --write .",
-    "test": "jest --runInBand"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "axios": "^1.10.0",
@@ -99,9 +63,45 @@
     "prettier": "^3.2.5",
     "prisma": "^6.11.1",
     "supertest": "^6.3.4",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5",
-    "typescript-eslint": "^8.36.0"
+    "typescript": "^5"
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    },
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ],
+    "testMatch": [
+      "**/?(*.)+(test|spec).[tj]s?(x)"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ]
   }
 }
