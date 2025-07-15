@@ -69,39 +69,21 @@
     "typescript": "^5"
   },
   "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
     "preset": "ts-jest/presets/default-esm",
-    "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ],
-    "transform": {
-      "^.+\\.(ts|tsx)$": [
-        "ts-jest",
-        {
-          "useESM": true
-        }
-      ]
+    "globals": {
+      "ts-jest": { "useESM": true }
     },
-    "moduleFileExtensions": [
-      "ts",
-      "js",
-      "json"
-    ],
-    "testMatch": [
-      "**/?(*.)+(test|spec).[tj]s?(x)"
-    ],
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src"],
+    "moduleFileExtensions": ["ts", "js", "json"],
+    "testMatch": ["**/?(*.)+(test|spec).ts"],
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", { "useESM": true }]
+    },
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
-    "transformIgnorePatterns": [
-      "/node_modules/"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/dist/"
-    ]
+    "transformIgnorePatterns": ["/node_modules/"],
+    "testPathIgnorePatterns": ["/dist/"]
   }
 }
