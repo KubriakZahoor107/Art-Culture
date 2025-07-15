@@ -10,11 +10,11 @@ import {
   deletePost,
   getCreatorsPosts,
   getAuthorsPosts,
-  getExhibitionsPosts,
-  getMuseumsPosts,
+  getExhibitionsPost,
+  getMuseumsPost,
   getPostsByAuthorId,
-  getPostsByExhibitionId,
-  getPostsByMuseumId,
+  getPostByExhibitionId,
+  getPostByMuseumId,
 } from "../controllers/postController.js"
 import authenticateToken from "../middleware/authMiddleware.js"
 import authorize from "../middleware/roleMiddleware.js"
@@ -33,12 +33,12 @@ router.get("/authors", getAuthorsPosts)
 router.get("/author/:authorId", getPostsByAuthorId)
 
 // Фільтрація по ролі exhibition та museum
-router.get("/exhibitions", getExhibitionsPosts)
-router.get("/museums", getMuseumsPosts)
+router.get("/exhibitions", getExhibitionsPost)
+router.get("/museums", getMuseumsPost)
 
 // Фільтрація по конкретному exhibition або museum
-router.get("/exhibition/:exhibitionId", getPostsByExhibitionId)
-router.get("/museum/:museumId", getPostsByMuseumId)
+router.get("/exhibition/:exhibitionId", getPostByExhibitionId)
+router.get("/museum/:museumId", getPostByMuseumId)
 
 // ── PROTECTED POSTS ───────────────────────────────────────────────────────
 router.use(authenticateToken)

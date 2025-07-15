@@ -284,18 +284,18 @@ export function makeByParamFinder(
 // === EXPORT ROUTES ===
 export const getCreatorsPosts = makeRoleFinder("CREATOR")
 export const getAuthorsPosts = makeRoleFinder("AUTHOR")
-export const getExhibitionsPosts = makeRoleFinder("EXHIBITION")
-export const getMuseumsPosts = makeRoleFinder("MUSEUM")
+export const getExhibitionsPost = makeRoleFinder("EXHIBITION")
+export const getMuseumsPost = makeRoleFinder("MUSEUM")
 
 export const getPostsByAuthorId = makeByParamFinder(
   "authorId",
   "postsByAuthor"
 )
-export const getPostsByExhibitionId = makeByParamFinder(
+export const getPostByExhibitionId = makeByParamFinder(
   "exhibitionId",
   "postsByExhibition"
 )
-export const getPostsByMuseumId = makeByParamFinder(
+export const getPostByMuseumId = makeByParamFinder(
   "museumId",
   "postsByMuseum"
 )
