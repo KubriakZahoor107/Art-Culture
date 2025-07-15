@@ -28,14 +28,16 @@ const storage = multer.diskStorage({
     },
 });
 function fileFilter(
-    _req: Request,
+    req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
 ) {
-    if (file.mimetype.startsWith("image/")) {
-        cb(null, true);
+    const allowed = /\.(jpe?g|png|gif|webp)$/i
+    if (allowed.test(path.extname(file.originalname)) && allowed.test(file.mimetype)) {
+        cb(null, true)
     } else {
-        cb(new Error("Дозволено завантажувати лише зображення!"), false);
+        // закриваємо new Error(...) а потім передаємо false
+        cb(new Error("Дозволено завантажувати лише зображення!"))
     }
 }
 export const upload = multer({

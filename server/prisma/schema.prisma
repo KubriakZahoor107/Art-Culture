@@ -82,8 +82,8 @@ model Product {
   ArtTerm                     ArtTerm[]
   exhibitions                 ExhibitionProduct[] @relation("ProductExhibitions")
   likes                       Like[]              @relation("LikeProduct")
-  user_Product_authorIdTouser User                @relation("Product_authorIdTouser", fields: [authorId], references: [id])
-  user_Product_museumIdTouser User?               @relation("Product_museumIdTouser", fields: [museumId], references: [id])
+  author                      User?  @relation("Product_authorIdTouser", fields: [authorId], references: [id])
+  museum                      User?  @relation("Product_museumIdTouser", fields: [museumId], references: [id])
   images                      ProductImage[]      @relation("ProductImages")
 
   @@index([authorId], map: "Product_authorId_fkey")

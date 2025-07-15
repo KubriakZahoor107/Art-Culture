@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client"
 import { Request, Response, NextFunction } from "express"
 import multer, { FileFilterCallback } from "multer"
 import fs from "fs"
@@ -43,11 +44,49 @@ export const upload = multer({
 })
 
 // === CREATE POST ===
-type CreatePostBody = {
-  title_en: string
-  title_uk?: string
-  content_en: string
-  content_uk?: string
+export const createPost = async (
+  req: Request & { file?: Express.Multer.File; user?: { id: number } },
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" })
+      return
+    }
+    const userId = req.user.id
+    const { title_en, title_uk, content_en, content_uk } = req.body as {
+      title_en: string
+      title_uk?: string
+      content_en: string
+      content_uk?: string
+    }
+
+    let imageUrl: string | null = null
+    if (req.file) {
+      imageUrl = `/uploads/postImages/${req.file.filename}`
+    }
+
+    // Будуємо об'єкт, додаючи необов'язкові поля тільки якщо вони задані
+    const postData = {
+      title_en,
+      content_en,
+      images: imageUrl,
+      status: "PENDING",
+      author: { connect: { id: userId } },
+      ...(title_uk ? { title_uk } : {}),
+      ...(content_uk ? { content_uk } : {}),
+    } as Prisma.PostCreateInput
+
+    const post = await prisma.post.create({
+      data: postData,
+      include: { author: { select: { id: true, email: true, title: true } } },
+    })
+
+    res.status(201).json(post)
+  } catch (err) {
+    next(err)
+  }
 }
 
 // === READ ALL APPROVED POSTS ===
@@ -106,13 +145,17 @@ export const getPostById = async (
 
 // === UPDATE POST ===
 export const updatePost = async (
-  req: Request & { file?: Express.Multer.File },
+  req: Request & { file?: Express.Multer.File; user?: { id: number } },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" })
+      return
+    }
     const id = parseInt(req.params.id, 10)
-    const userId = (req.user as any).id
+    const userId = req.user.id
 
     const existing = await prisma.post.findUnique({ where: { id } })
     if (!existing) {
@@ -127,8 +170,7 @@ export const updatePost = async (
     let imageUrl = existing.images
     if (req.file) {
       if (existing.images) {
-        const oldPath = path.join(__dirname, "../../uploads", existing.images)
-        fs.unlinkSync(oldPath)
+        fs.unlinkSync(path.join(__dirname, "../../uploads", existing.images))
       }
       imageUrl = `/uploads/postImages/${req.file.filename}`
     }
@@ -137,9 +179,9 @@ export const updatePost = async (
       where: { id },
       data: {
         title_en: req.body.title_en,
-        title_uk: req.body.title_uk,
+        title_uk: req.body.title_uk ?? null,
         content_en: req.body.content_en,
-        content_uk: req.body.content_uk,
+        content_uk: req.body.content_uk ?? null,
         images: imageUrl,
       },
       include: { author: { select: { id: true, email: true, title: true } } },
@@ -153,13 +195,17 @@ export const updatePost = async (
 
 // === DELETE POST ===
 export const deletePost = async (
-  req: Request,
+  req: Request & { user?: { id: number } },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" })
+      return
+    }
     const id = parseInt(req.params.id, 10)
-    const userId = (req.user as any).id
+    const userId = req.user.id
 
     const existing = await prisma.post.findUnique({ where: { id } })
     if (!existing) {
@@ -172,8 +218,7 @@ export const deletePost = async (
     }
 
     if (existing.images) {
-      const imgPath = path.join(__dirname, "../../uploads", existing.images)
-      fs.unlinkSync(imgPath)
+      fs.unlinkSync(path.join(__dirname, "../../uploads", existing.images))
     }
 
     await prisma.post.delete({ where: { id } })
@@ -184,23 +229,19 @@ export const deletePost = async (
 }
 
 // === GET POSTS BY ROLE ===
-export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSEUM') {
+export function makeRoleFinder(
+  role: "CREATOR" | "AUTHOR" | "EXHIBITION" | "MUSEUM"
+) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const posts = await prisma.post.findMany({
-        where: {
-          author: {
-            role,          // <-- тут було allowedRole, замінено на role
-          },
-        },
-        include: {
-          author: { select: { id: true, email: true, title: true } },
-        },
-        orderBy: { createdAt: 'desc' },
+        where: { author: { role } },
+        include: { author: { select: { id: true, email: true, title: true } } },
+        orderBy: { createdAt: "desc" },
       })
       res.json({ posts })
     } catch (err: any) {
-      if (err.code === 'P2021') {
+      if (err.code === "P2021") {
         res.json({ posts: [] })
         return
       }
@@ -210,7 +251,51 @@ export function makeRoleFinder(role: 'CREATOR' | 'AUTHOR' | 'EXHIBITION' | 'MUSE
   }
 }
 
-export const getCreatorsPosts = makeRoleFinder('CREATOR')
-export const getAuthorsPosts = makeRoleFinder('AUTHOR')
-export const getExhibitionsPosts = makeRoleFinder('EXHIBITION')
-export const getMuseumsPosts = makeRoleFinder('MUSEUM')
+// === GET POSTS BY PARAMETER ===
+export function makeByParamFinder(
+  param: "authorId" | "exhibitionId" | "museumId",
+  alias: string
+) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = parseInt((req.params as any)[param], 10)
+      if (isNaN(id)) {
+        res.status(400).json({ error: "Invalid ID" })
+        return
+      }
+      const posts = await prisma.post.findMany({
+        where: { [param]: id } as any,
+        include: {
+          author: { select: { id: true, email: true, title: true, role: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      })
+      res.json({ [alias]: posts })
+    } catch (err: any) {
+      if (err.code === "P2021") {
+        res.json({ [alias]: [] })
+        return
+      }
+      next(err)
+    }
+  }
+}
+
+// === EXPORT ROUTES ===
+export const getCreatorsPosts = makeRoleFinder("CREATOR")
+export const getAuthorsPosts = makeRoleFinder("AUTHOR")
+export const getExhibitionsPosts = makeRoleFinder("EXHIBITION")
+export const getMuseumsPosts = makeRoleFinder("MUSEUM")
+
+export const getPostsByAuthorId = makeByParamFinder(
+  "authorId",
+  "postsByAuthor"
+)
+export const getPostsByExhibitionId = makeByParamFinder(
+  "exhibitionId",
+  "postsByExhibition"
+)
+export const getPostsByMuseumId = makeByParamFinder(
+  "museumId",
+  "postsByMuseum"
+)
