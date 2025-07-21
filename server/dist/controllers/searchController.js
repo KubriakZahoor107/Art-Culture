@@ -1,4 +1,6 @@
+// /Users/konstantinkubriak/Desktop/Art-Culture/server/src/controllers/searchController.ts
 import prisma from "../prismaClient.js";
+// Search authors with role CREATOR
 export const searchAuthors = async (req, res, next) => {
     try {
         const query = req.query.q || "";
@@ -17,7 +19,7 @@ export const searchAuthors = async (req, res, next) => {
                 bio: true,
                 images: true,
             },
-            take: 10, //Limit request
+            take: 10,
         });
         res.json({ authors });
     }
@@ -26,12 +28,12 @@ export const searchAuthors = async (req, res, next) => {
         next(error);
     }
 };
+// Search paintings by optional authorId
 export const searchPainting = async (req, res, next) => {
     try {
         const query = req.query.q || "";
-        const authorId = req.params.authorId
-            ? parseInt(req.params.authorId, 10)
-            : null;
+        const authorIdParam = req.params.authorId;
+        const authorId = authorIdParam ? parseInt(authorIdParam, 10) : undefined;
         const paintings = await prisma.product.findMany({
             where: {
                 AND: [
@@ -43,7 +45,7 @@ export const searchPainting = async (req, res, next) => {
                             { description_uk: { contains: query.toLowerCase() } },
                         ],
                     },
-                    authorId ? { authorId: authorId } : {},
+                    ...(authorId !== undefined ? [{ authorId }] : []),
                 ],
             },
             include: {
@@ -58,7 +60,7 @@ export const searchPainting = async (req, res, next) => {
                     },
                 },
             },
-            take: 10, //Limit request
+            take: 10,
         });
         res.json({ paintings });
     }
@@ -67,6 +69,7 @@ export const searchPainting = async (req, res, next) => {
         next(error);
     }
 };
+// Search museums with role MUSEUM
 export const searchMuseum = async (req, res, next) => {
     try {
         const query = req.query.q || "";
@@ -86,15 +89,19 @@ export const searchMuseum = async (req, res, next) => {
                 bio: true,
                 images: true,
                 country: true,
-                house_number: true,
+                houseNumber: true,
                 lat: true,
                 lon: true,
                 postcode: true,
                 state: true,
                 street: true,
                 city: true,
+                // Додано: museum_logo_images для пошуку музеїв, якщо це потрібно на фронтенді
+                museum_logo_images: {
+                    select: { imageUrl: true },
+                },
             },
-            take: 10, //Limit request
+            take: 10,
         });
         res.json({ museums });
     }
@@ -103,17 +110,17 @@ export const searchMuseum = async (req, res, next) => {
         next(error);
     }
 };
-// controllers/searchController.js
+// Comprehensive search across authors, products, posts, exhibitions
 export const searchAll = async (req, res, next) => {
     try {
         const query = req.query.q || "";
-        // Search for authors (fixing the typo: "contains" instead of "contain")
-        const searchAllAuthors = await prisma.user.findMany({
+        const ql = query.toLowerCase();
+        const searchAllAuthors = prisma.user.findMany({
             where: {
-                role: { in: ["CREATOR", "MUSEUM", "EXHIBITION", "AUTHOR"] }, // Removed duplicate "MUSEUM"
+                role: { in: ["CREATOR", "MUSEUM", "EXHIBITION", "AUTHOR"] },
                 OR: [
-                    { email: { contains: query.toLowerCase() } },
-                    { title: { contains: query.toLowerCase() } },
+                    { email: { contains: ql } },
+                    { title: { contains: ql } },
                 ],
             },
             select: {
@@ -123,22 +130,20 @@ export const searchAll = async (req, res, next) => {
                 bio: true,
                 images: true,
                 role: true,
+                // Додано: museum_logo_images, якщо потрібно для музеїв у загальному пошуку
+                museum_logo_images: {
+                    select: { imageUrl: true },
+                },
             },
             take: 10,
         });
-        // Search for products (remove reference to undefined museumId)
-        const searchAllProduct = await prisma.product.findMany({
+        const searchAllProduct = prisma.product.findMany({
             where: {
-                AND: [
-                    {
-                        OR: [
-                            { title_en: { contains: query.toLowerCase() } },
-                            { description_en: { contains: query.toLowerCase() } },
-                            { title_uk: { contains: query.toLowerCase() } },
-                            { description_uk: { contains: query.toLowerCase() } },
-                        ],
-                    },
-                    // Remove or modify the authorId condition if not needed
+                OR: [
+                    { title_en: { contains: ql } },
+                    { description_en: { contains: ql } },
+                    { title_uk: { contains: ql } },
+                    { description_uk: { contains: ql } },
                 ],
             },
             include: {
@@ -155,13 +160,13 @@ export const searchAll = async (req, res, next) => {
             },
             take: 10,
         });
-        const searchAllPosts = await prisma.post.findMany({
+        const searchAllPosts = prisma.post.findMany({
             where: {
                 OR: [
-                    { title_en: { contains: query.toLowerCase() } },
-                    { content_en: { contains: query.toLowerCase() } },
-                    { title_uk: { contains: query.toLowerCase() } },
-                    { content_uk: { contains: query.toLowerCase() } },
+                    { title_en: { contains: ql } },
+                    { content_en: { contains: ql } },
+                    { title_uk: { contains: ql } },
+                    { content_uk: { contains: ql } },
                 ],
             },
             select: {
@@ -172,15 +177,17 @@ export const searchAll = async (req, res, next) => {
             },
             take: 10,
         });
-        const searchAllExhibitions = await prisma.exhibition.findMany({
+        const searchAllExhibitions = prisma.exhibition.findMany({
             include: {
                 images: true,
-                museum: {
+                // Виправлено: 'museum' на 'user_Exhibition_museumIdTouser' згідно schema.prisma
+                user_Exhibition_museumIdTouser: {
                     include: {
-                        museum_logo_image: true,
+                        museum_logo_images: true,
                     },
                 },
-                createdBy: {
+                // Виправлено: 'createdBy' на 'user_Exhibition_createdByIdTouser' згідно schema.prisma
+                user_Exhibition_createdByIdTouser: {
                     select: {
                         id: true,
                         email: true,
@@ -197,15 +204,17 @@ export const searchAll = async (req, res, next) => {
                 createdAt: "desc",
             },
         });
-        res.json({
+        const [authors, products, posts, exhibitions] = await Promise.all([
             searchAllAuthors,
             searchAllProduct,
             searchAllPosts,
             searchAllExhibitions,
-        });
+        ]);
+        res.json({ authors, products, posts, exhibitions });
     }
     catch (error) {
-        console.error("error in searchAll", error);
+        console.error("Error in searchAll:", error);
         next(error);
     }
 };
+//# sourceMappingURL=searchController.js.map

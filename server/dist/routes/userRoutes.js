@@ -14,3 +14,4 @@ router.get("/museums", getMuseums);
 router.get("/exhibitions", getExhibitions);
 router.get("/exhibitions/:id", getExhibitionById);
 export default router;
+//# sourceMappingURL=userRoutes.js.map

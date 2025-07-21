@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express"
 import jwt from "jsonwebtoken"
-import prisma from "../prismaClient.js"
+import prisma from "../prismaClient.js" // Важливо: імпортуємо Prisma для отримання даних користувача
 
-// JWT-аутентифікація
-export default async function authenticateToken(
+/**
+ * Middleware для автентифікації користувача за JWT токеном.
+ * Верифікує токен, отримує повні дані користувача з БД і додає їх до req.user.
+ */
+export async function authenticateToken( // Додано 'async'
   req: Request,
   res: Response,
   next: NextFunction
@@ -23,21 +26,50 @@ export default async function authenticateToken(
   }
 
   try {
-    const payload = jwt.verify(token, secret) as { userId: number }
+    // Верифікуємо токен. Payload токена містить id, email та role, які ми закодували.
+    // Ми не типізуємо його як JwtPayload, оскільки JwtPayload більше не експортується.
+    const payload = jwt.verify(token, secret) as { id: number; email: string; role: string };
+
+    // Отримуємо повні дані користувача з бази даних за ID з токена.
+    // Це важливо, щоб req.user мав усі поля, які очікуються (наприклад, resetToken).
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { id: true, email: true, role: true },
+      where: { id: payload.id },
+      // Вибираємо всі поля, які потрібні для sanitizeUser та подальшої роботи
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        title: true,
+        bio: true,
+        images: true,
+        country: true,
+        city: true,
+        street: true,
+        houseNumber: true,
+        postcode: true,
+        lat: true,
+        lon: true,
+        createdAt: true,
+        updatedAt: true,
+        password: true, // Включаємо пароль, щоб sanitizeUser міг його видалити
+        resetToken: true, // Обов'язково включаємо
+        resetTokenExpiry: true, // Обов'язково включаємо
+        state: true // ДОДАНО: Включаємо поле 'state'
+      },
     })
+
     if (!user) {
       res.status(401).json({ error: "User not found" })
       return
     }
 
-    // Додаємо user у глобально розширений Request
-    req.user = { id: user.id, email: user.email, role: user.role }
+    // Присвоюємо повний об'єкт користувача до req.user.
+    // Завдяки src/types/express.d.ts, TypeScript тепер знає, що req.user - це тип User з Prisma.
+    req.user = user;
     next()
   } catch (err) {
     console.error("Authentication error:", err)
-    res.status(401).json({ error: "Unauthorized" })
+    res.status(403).json({ error: "Unauthorized: Invalid or expired token" }) // 403 Forbidden для недійсного токена
+    return
   }
 }

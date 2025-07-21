@@ -1,6 +1,6 @@
 import express from "express";
 import { getLikeCount, getLikeStatus, getTopLikedExhibitions, getTopLikedMuseums, getTopLikedPaintings, getTopLikedPosts, toggleLikeEntity, } from "../controllers/likeController.js";
-import authenticateToken from "../middleware/authMiddleware.js";
+import { authenticateToken } from "../middleware/authMiddleware.js"; // Змінено: імпортуємо authenticateToken як іменований експорт
 const router = express.Router();
 //* Route to like an entity
 // router.post("/", authenticateToken, likeEntity)
@@ -13,3 +13,4 @@ router.get("/top-liked-paintings", getTopLikedPaintings);
 router.get("/status", authenticateToken, getLikeStatus);
 router.get("/count", getLikeCount);
 export default router;
+//# sourceMappingURL=likeRoutes.js.map

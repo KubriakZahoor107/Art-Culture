@@ -164,7 +164,8 @@ export const getCreatorById = async (
     const creator = await prisma.user.findUnique({
       where: { id: creatorId },
       include: {
-        products: {
+        // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+        products_Product_authorIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -280,7 +281,8 @@ export const getAuthorById = async (
     const author = await prisma.user.findUnique({
       where: { id: authorId },
       include: {
-        products: {
+        // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+        products_Product_authorIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -321,9 +323,9 @@ export const getMuseums = async (
         country: true,
         city: true,
         street: true,
-        houseNumber: true,       // corrected from house_number
-        postcode: true,
-        museumLogoImage: {       // corrected from museum_logo_image
+        houseNumber: true,
+        // Змінено: 'museumLogoImage' на 'museum_logo_images' згідно schema.prisma
+        museum_logo_images: {
           select: { imageUrl: true },
         },
       },
@@ -352,8 +354,10 @@ export const getMuseumById = async (
     const museum = await prisma.user.findUnique({
       where: { id: museumId },
       include: {
-        museumLogoImage: true,   // corrected
-        products: {
+        // Змінено: 'museumLogoImage' на 'museum_logo_images' згідно schema.prisma
+        museum_logo_images: true,
+        // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_museumIdTouser
+        products_Product_museumIdTouser: {
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },
@@ -415,7 +419,11 @@ export const getExhibitionById = async (
     const exhibition = await prisma.user.findUnique({
       where: { id: exhibitionId },
       include: {
-        products: {
+        // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+        // Примітка: Якщо користувач з роллю "EXHIBITION" не є автором продуктів
+        // або не є музеєм, який володіє продуктами, ця відносина може бути нерелевантною.
+        // Перевірте логіку вашого додатку.
+        products_Product_authorIdTouser: { // Змінено на products_Product_authorIdTouser
           include: { images: true },
           orderBy: { createdAt: "desc" },
         },

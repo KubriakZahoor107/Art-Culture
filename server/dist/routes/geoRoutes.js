@@ -6,3 +6,4 @@ const router = express.Router();
 router.get("/", searchAddress);
 router.get("/museum", searchMuseumAddress);
 export default router;
+//# sourceMappingURL=geoRoutes.js.map

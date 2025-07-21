@@ -1,7 +1,7 @@
-// server/src/controllers/exhibitionController.ts
 import prisma from '../prismaClient.js';
 import logger from '../utils/logging.js';
-export const createExhibitions = async (req, res, next) => {
+export const createExhibitions = async (req, // Змінено з AuthRequest на Request
+res, next) => {
     try {
         const { title_en, title_uk, description_en, description_uk, startDate, endDate, time, endTime, location_en, location_uk, latitude, longitude, address, museumId, artistIds, paintingIds, } = req.body;
         // Валідація масивів ID
@@ -20,11 +20,10 @@ export const createExhibitions = async (req, res, next) => {
         }
         const userId = req.user.id;
         // Файли з Multer
-        const files = req.files || [];
+        const files = req.files ?? [];
         const images = files.map((file) => ({
             imageUrl: `/uploads/exhibitionsImages/${file.filename}`,
         }));
-        // Створюємо експозицію
         const exhibition = await prisma.exhibition.create({
             data: {
                 title_en,
@@ -41,13 +40,19 @@ export const createExhibitions = async (req, res, next) => {
                 longitude: longitude != null ? parseFloat(longitude) : null,
                 address: address || null,
                 images: { create: images },
-                createdBy: { connect: { id: userId } },
-                museum: { connect: { id: parsedMuseumId } },
+                // Виправлено: 'createdBy' на 'createdById' для підключення за ID
+                createdById: userId,
+                // Виправлено: 'museum' на 'museumId' для підключення за ID
+                museumId: parsedMuseumId,
                 exhibitionArtists: {
-                    create: artistIds.map((aid) => ({ artist: { connect: { id: aid } } })),
+                    create: artistIds.map((aid) => ({
+                        artist: { connect: { id: aid } },
+                    })),
                 },
                 products: {
-                    create: paintingIds.map((pid) => ({ product: { connect: { id: pid } } })),
+                    create: paintingIds.map((pid) => ({
+                        product: { connect: { id: pid } },
+                    })),
                 },
             },
             include: {
@@ -56,7 +61,10 @@ export const createExhibitions = async (req, res, next) => {
                 products: { include: { product: true } },
             },
         });
-        res.status(201).json({ exhibition, message: 'Exhibition created successfully' });
+        res.status(201).json({
+            exhibition,
+            message: 'Exhibition created successfully',
+        });
     }
     catch (error) {
         logger.error('Error creating exhibition:', error);
@@ -70,10 +78,17 @@ export const getAllExhibitions = async (req, res, next) => {
                 images: true,
                 exhibitionArtists: { include: { artist: true } },
                 products: { include: { product: true } },
+                // Додано: включення інформації про музей та творця, якщо потрібно
+                user_Exhibition_museumIdTouser: {
+                    include: { museum_logo_images: true }
+                },
+                user_Exhibition_createdByIdTouser: {
+                    select: { id: true, email: true, title: true }
+                }
             },
             orderBy: { startDate: 'desc' },
         });
-        res.json(exhibitions);
+        res.status(200).json({ exhibitions });
     }
     catch (error) {
         logger.error('Error fetching all exhibitions:', error);
@@ -93,20 +108,28 @@ export const getExhibitionById = async (req, res, next) => {
                 images: true,
                 exhibitionArtists: { include: { artist: true } },
                 products: { include: { product: true } },
+                // Додано: включення інформації про музей та творця, якщо потрібно
+                user_Exhibition_museumIdTouser: {
+                    include: { museum_logo_images: true }
+                },
+                user_Exhibition_createdByIdTouser: {
+                    select: { id: true, email: true, title: true }
+                }
             },
         });
         if (!exhibition) {
             res.status(404).json({ error: 'Exhibition not found' });
             return;
         }
-        res.json(exhibition);
+        res.status(200).json({ exhibition });
     }
     catch (error) {
         logger.error('Error fetching exhibition by ID:', error);
         next(error);
     }
 };
-export const getMyExhibitions = async (req, res, next) => {
+export const getMyExhibitions = async (req, // Змінено з AuthRequest на Request
+res, next) => {
     try {
         const userId = req.user.id;
         const exhibitions = await prisma.exhibition.findMany({
@@ -115,10 +138,17 @@ export const getMyExhibitions = async (req, res, next) => {
                 images: true,
                 exhibitionArtists: { include: { artist: true } },
                 products: { include: { product: true } },
+                // Додано: включення інформації про музей та творця, якщо потрібно
+                user_Exhibition_museumIdTouser: {
+                    include: { museum_logo_images: true }
+                },
+                user_Exhibition_createdByIdTouser: {
+                    select: { id: true, email: true, title: true }
+                }
             },
             orderBy: { startDate: 'desc' },
         });
-        res.json(exhibitions);
+        res.status(200).json({ exhibitions });
     }
     catch (error) {
         logger.error('Error fetching my exhibitions:', error);
@@ -134,13 +164,23 @@ export const getProductsByExhibitionId = async (req, res, next) => {
         }
         const record = await prisma.exhibition.findUnique({
             where: { id: exhibitionId },
-            include: { products: { include: { product: true } } },
+            include: {
+                products: { include: { product: true } },
+                // Додано: включення інформації про музей та творця, якщо потрібно
+                user_Exhibition_museumIdTouser: {
+                    include: { museum_logo_images: true }
+                },
+                user_Exhibition_createdByIdTouser: {
+                    select: { id: true, email: true, title: true }
+                }
+            },
         });
         if (!record) {
             res.status(404).json({ error: 'Exhibition not found' });
             return;
         }
-        res.json(record.products.map((p) => p.product));
+        const products = record.products.map((p) => p.product);
+        res.status(200).json({ products });
     }
     catch (error) {
         logger.error('Error fetching products for exhibition:', error);
@@ -161,9 +201,16 @@ export const updateExhibition = async (req, res, next) => {
                 images: true,
                 exhibitionArtists: { include: { artist: true } },
                 products: { include: { product: true } },
+                // Додано: включення інформації про музей та творця, якщо потрібно
+                user_Exhibition_museumIdTouser: {
+                    include: { museum_logo_images: true }
+                },
+                user_Exhibition_createdByIdTouser: {
+                    select: { id: true, email: true, title: true }
+                }
             },
         });
-        res.json(updated);
+        res.status(200).json({ updated });
     }
     catch (error) {
         logger.error('Error updating exhibition:', error);
@@ -178,10 +225,11 @@ export const deleteExhibition = async (req, res, next) => {
             return;
         }
         await prisma.exhibition.delete({ where: { id } });
-        res.json({ message: 'Exhibition deleted successfully' });
+        res.sendStatus(204);
     }
     catch (error) {
         logger.error('Error deleting exhibition:', error);
         next(error);
     }
 };
+//# sourceMappingURL=exhibitionController.js.map

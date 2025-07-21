@@ -16,8 +16,8 @@ import {
   getPostByExhibitionId,
   getPostByMuseumId,
 } from "../controllers/postController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
-import authorize from "../middleware/roleMiddleware.js"
+import { authenticateToken } from "../middleware/authMiddleware.js" // Змінено: імпортуємо authenticateToken як іменований експорт
+import authorize from '../middleware/roleMiddleware.js'
 
 const router = express.Router()
 
@@ -65,4 +65,3 @@ router.delete(
 )
 
 export default router
-

@@ -8,51 +8,77 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-model User {
-  id                                      Int                @id @default(autoincrement())
-  email                                   String             @unique
-  password                                String
-  role                                    Role               @default(USER)
-  images                                  String?
-  title                                   String?
-  bio                                     String?
-  createdAt                               DateTime           @default(now())
-  updatedAt                               DateTime           @updatedAt
-  country                                 String?
-  houseNumber                             String?            @map("house_number")
-  lat                                     Float?
-  lon                                     Float?
-  postcode                                String?
-  state                                   String?
-  street                                  String?
-  city                                    String?
-  artTermsCreated                         ArtTerm[]          @relation("UserCreatedArtTerms")
-  Exhibition_Exhibition_createdByIdTouser Exhibition[]       @relation("Exhibition_createdByIdTouser")
-  Exhibition_Exhibition_museumIdTouser    Exhibition[]       @relation("Exhibition_museumIdTouser")
-  exhibitionArtists                       ExhibitionArtist[] @relation("ExhibitionArtistsUser")
-  likesReceived                           Like[]             @relation("LikesReceived")
-  likesGiven                              Like[]             @relation("LikesGiven")
-  posts                                   Post[]             @relation("PostAuthor")
-  Product_Product_authorIdTouser          Product[]          @relation("Product_authorIdTouser")
-  Product_Product_museumIdTouser          Product[]          @relation("Product_museumIdTouser")
-  museum_logo_images                      MuseumLogoImage?
+// Визначення ENUM'ів
+enum Role {
+  USER
+  ADMIN
+  MUSEUM
+  CREATOR
+  EDITOR
+  AUTHOR
+  EXHIBITION
+}
 
-  @@map("user")
+enum PostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                                   Int                @id @default(autoincrement())
+  email                                String             @unique
+  password                             String
+  role                                 Role               @default(USER)
+  title                                String?
+  bio                                  String?
+  images                               Json?              // Json? для масиву URL-адрес зображень
+  resetToken                           String?            @unique
+  resetTokenExpiry                     DateTime?
+  createdAt                            DateTime           @default(now()) @map("created_at") // Змінено на camelCase з @map
+  updatedAt                            DateTime           @updatedAt @map("updated_at")    // Змінено на camelCase з @map
+  country                              String?
+  houseNumber                          String?            @map("house_number") // Змінено на camelCase з @map
+  lat                                  Float?
+  lon                                  Float?
+  postcode                             String?
+  state                                String?
+  street                               String?
+  city                                 String?
+
+  artTermsCreated                      ArtTerm[]          @relation("UserCreatedArtTerms")
+  exhibitions_Exhibition_createdByIdTouser Exhibition[]     @relation("Exhibition_createdByIdTouser")
+  exhibitionArtists                    ExhibitionArtist[] @relation("ExhibitionArtistsUser")
+  likesReceived                        Like[]             @relation("LikesReceived") // Лайки, отримані на профіль користувача
+  likesGiven                           Like[]             @relation("LikesGiven")    // Лайки, поставлені користувачем
+  posts                                Post[]             @relation("PostAuthor")
+  products_Product_authorIdTouser      Product[]          @relation("Product_authorIdTouser")
+  products_Product_museumIdTouser      Product[]          @relation("Product_museumIdTouser")
+  museum_logo_images                   MuseumLogoImage[]
+  exhibitions_Exhibition_museumIdTouser Exhibition[]       @relation("Exhibition_museumIdTouser") // Переміщено сюди
+
+  @@map("user") // Мапінг на таблицю 'user' у базі даних
 }
 
 model Post {
   id            Int        @id @default(autoincrement())
   title_en      String     @db.VarChar(250)
-  title_uk      String     @db.VarChar(250)
+  title_uk      String?    @db.VarChar(250) // ЗМІНЕНО НА НЕОБОВ'ЯЗКОВЕ
   content_en    String     @db.VarChar(5000)
-  content_uk    String     @db.VarChar(5000)
-  authorId      Int        @map("author_id")
-  images        String?
+  content_uk    String?    @db.VarChar(5000) // ЗМІНЕНО НА НЕОБОВ'ЯЗКОВЕ
+  authorId      Int        @map("author_id") // Змінено на camelCase з @map
+  images        Json?
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
-  creator_id    Int?
-  exhibition_id Int?
-  museum_id     Int?
+  creatorId     Int?       @map("creator_id")
+  exhibitionId  Int?       @map("exhibition_id")
+  museumId      Int?       @map("museum_id")
   status        PostStatus @default(PENDING)
   likes         Like[]     @relation("LikePost")
   author        User       @relation("PostAuthor", fields: [authorId], references: [id])
@@ -61,33 +87,34 @@ model Post {
 }
 
 model Product {
-  id                          Int                 @id @default(autoincrement())
-  title_en                    String              @db.VarChar(100)
-  title_uk                    String              @db.VarChar(100)
-  description_en              String              @db.VarChar(1000)
-  description_uk              String              @db.VarChar(1000)
-  specs_en                    String?             @db.VarChar(500)
-  specs_uk                    String?             @db.VarChar(500)
-  createdAt                   DateTime            @default(now())
-  updatedAt                   DateTime            @updatedAt
-  authorId                    Int
-  museumId                    Int?
-  size                        String?             @db.VarChar(100)
-  style_en                    String?             @db.VarChar(100)
-  style_uk                    String?             @db.VarChar(100)
-  technique_en                String?             @db.VarChar(100)
-  technique_uk                String?             @db.VarChar(100)
-  dateOfCreation              String?             @map("dateofcreation") @db.VarChar(100)
-  status                      ProductStatus       @default(PENDING)
-  ArtTerm                     ArtTerm[]
-  exhibitions                 ExhibitionProduct[] @relation("ProductExhibitions")
-  likes                       Like[]              @relation("LikeProduct")
-  author                      User?  @relation("Product_authorIdTouser", fields: [authorId], references: [id])
-  museum                      User?  @relation("Product_museumIdTouser", fields: [museumId], references: [id])
-  images                      ProductImage[]      @relation("ProductImages")
+  id             Int           @id @default(autoincrement())
+  title_en       String        @db.VarChar(100)
+  title_uk       String        @db.VarChar(100)
+  description_en String        @db.VarChar(1000)
+  description_uk String        @db.VarChar(1000)
+  specs_en       String?       @db.VarChar(500)
+  specs_uk       String?       @db.VarChar(500)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  authorId       Int
+  museumId       Int?
+  size           String?       @db.VarChar(100)
+  style_en       String?       @db.VarChar(100)
+  style_uk       String?       @db.VarChar(100)
+  technique_en   String?       @db.VarChar(100)
+  technique_uk   String?       @db.VarChar(100)
+  dateOfCreation String?       @map("dateofcreation") @db.VarChar(100)
+  status         ProductStatus @default(PENDING)
+
+  ArtTerm        ArtTerm[]
+  exhibitions    ExhibitionProduct[] @relation("ProductExhibitions")
+  likes          Like[]              @relation("LikeProduct")
+  author         User                @relation("Product_authorIdTouser", fields: [authorId], references: [id])
+  museum         User?               @relation("Product_museumIdTouser", fields: [museumId], references: [id])
+  images         ProductImage[]      @relation("ProductImages")
 
   @@index([authorId], map: "Product_authorId_fkey")
-  @@index([museumId], map: "Product_museumId_fkey")
+  @@index([museumId], map: "Product_museum_id_fkey")
 }
 
 model ProductImage {
@@ -100,37 +127,34 @@ model ProductImage {
 }
 
 model Exhibition {
-  id                                Int                 @id @default(autoincrement())
-  startDate                         DateTime
-  endDate                           DateTime
-  time                              String?             @db.VarChar(200)
-  createdById                       Int
-  createdAt                         DateTime            @default(now())
-  updatedAt                         DateTime            @updatedAt
-  description_en                    String?             @db.VarChar(500)
-  description_uk                    String?             @db.VarChar(500)
-  location_en                       String?             @db.VarChar(500)
-  location_uk                       String?             @db.VarChar(500)
-  title_en                          String?             @db.VarChar(150)
-  title_uk                          String?             @db.VarChar(150)
-  address                           String?
-  latitude                          Float?
-  longitude                         Float?
-  endTime                           String?             @db.VarChar(200)
-  museumId                          Int?
-  role                              String?
-  email                             String?
-  bio                               String?
-  title                             String?
-  user_Exhibition_createdByIdTouser User                @relation("Exhibition_createdByIdTouser", fields: [createdById], references: [id])
-  user_Exhibition_museumIdTouser    User?               @relation("Exhibition_museumIdTouser", fields: [museumId], references: [id])
-  exhibitionArtists                 ExhibitionArtist[]  @relation("ExhibitionArtists")
-  images                            ExhibitionImage[]   @relation("ExhibitionImages")
-  products                          ExhibitionProduct[] @relation("ProductExhibitions")
-  likes                             Like[]              @relation("LikeExhibition")
+  id                                  Int                 @id @default(autoincrement())
+  startDate                           DateTime
+  endDate                             DateTime
+  time                                String?             @db.VarChar(200)
+  createdById                         Int
+  createdAt                           DateTime            @default(now())
+  updatedAt                           DateTime            @updatedAt
+  description_en                      String?             @db.VarChar(500)
+  description_uk                      String?             @db.VarChar(500)
+  location_en                         String?             @db.VarChar(500)
+  location_uk                         String?             @db.VarChar(500)
+  title_en                            String?             @db.VarChar(150)
+  title_uk                            String?             @db.VarChar(150)
+  address                             String?
+  latitude                            Float?
+  longitude                           Float?
+  endTime                             String?             @db.VarChar(200)
+  museumId                            Int?
+
+  user_Exhibition_createdByIdTouser   User                @relation("Exhibition_createdByIdTouser", fields: [createdById], references: [id])
+  user_Exhibition_museumIdTouser      User?               @relation("Exhibition_museumIdTouser", fields: [museumId], references: [id])
+  exhibitionArtists                   ExhibitionArtist[]  @relation("ExhibitionArtists")
+  images                              ExhibitionImage[]   @relation("ExhibitionImages")
+  products                            ExhibitionProduct[] @relation("ProductExhibitions")
+  likes                               Like[]              @relation("LikeExhibition")
 
   @@index([createdById], map: "Exhibition_createdById_fkey")
-  @@index([museumId], map: "Exhibition_museumId_fkey")
+  @@index([museumId], map: "Exhibition_museum_id_fkey")
 }
 
 model ExhibitionProduct {
@@ -166,8 +190,8 @@ model ArtTerm {
   id                   Int      @id @default(autoincrement())
   title_en             String   @db.VarChar(100)
   title_uk             String   @db.VarChar(100)
-  description_en       String   @db.Text
-  description_uk       String   @db.Text
+  description_en       String   @db.VarChar(350)
+  description_uk       String   @db.VarChar(350)
   content_en           String   @db.Text
   content_uk           String   @db.Text
   authorId             Int      @map("author_id")
@@ -184,7 +208,7 @@ model ArtTerm {
 model MuseumLogoImage {
   id       Int    @id @default(autoincrement())
   imageUrl String
-  userId   Int    @unique
+  userId   Int
   user     User   @relation(fields: [userId], references: [id])
 
   @@index([userId], map: "Museum_logo_images_userId_fkey")
@@ -210,26 +234,4 @@ model Like {
   @@index([postId])
   @@index([productId])
   @@index([userId])
-}
-
-enum Role {
-  USER
-  ADMIN
-  MUSEUM
-  CREATOR
-  EDITOR
-  AUTHOR
-  EXHIBITION
-}
-
-enum PostStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum ProductStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }

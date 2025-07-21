@@ -1,4 +1,4 @@
-// exhibitionImageUploader.js
+// exhibitionImageUploader.ts
 import multer from "multer";
 import path, { dirname } from "path";
 import sharp from "sharp";
@@ -15,6 +15,7 @@ const fileFilter = (req, file, cb) => {
         return cb(null, true);
     }
     else {
+        // Передаємо MulterError як перший аргумент cb
         cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "Only images are allowed"));
     }
 };
@@ -24,10 +25,14 @@ const upload = multer({
     limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit
 });
 const processImages = async (req, res, next) => {
-    if (!req.files)
-        return next();
+    // Явно приводимо req.files до Express.Multer.File[],
+    // оскільки ми використовуємо upload.array().
+    const files = req.files;
+    if (!files || files.length === 0) {
+        return next(); // Якщо файлів немає, просто переходимо до наступного middleware
+    }
     try {
-        await Promise.all(req.files.map(async (file) => {
+        await Promise.all(files.map(async (file) => {
             const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
             const filename = uniqueSuffix + ".webp";
             const outputPath = path.join(__dirname, "../../uploads/exhibitionsImages", filename);
@@ -47,6 +52,7 @@ const processImages = async (req, res, next) => {
     }
 };
 export default {
-    upload: upload.array("exhibitionImages", 10),
+    upload: upload.array("exhibitionImages", 10), // Використовуємо .array()
     processImages,
 };
+//# sourceMappingURL=exhibitionImageUploader.js.map

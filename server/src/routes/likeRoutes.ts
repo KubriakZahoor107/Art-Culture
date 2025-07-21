@@ -8,7 +8,7 @@ import {
   getTopLikedPosts,
   toggleLikeEntity,
 } from "../controllers/likeController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
+import { authenticateToken } from "../middleware/authMiddleware.js" // Змінено: імпортуємо authenticateToken як іменований експорт
 
 const router = express.Router()
 

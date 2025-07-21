@@ -1,6 +1,5 @@
-import { Request } from 'express';
 // server/src/controllers/likeController.ts
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express"; // Використовуємо стандартний Request
 import prisma from "../prismaClient.js";
 
 
@@ -23,11 +22,14 @@ const relationMap: Record<EntityType, {
  * Toggle a like on or off for the given entity
  */
 export const toggleLikeEntity = async (
-  req: AuthRequest,
+  req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
+    // req.user! використовується, оскільки ми очікуємо, що middleware автентифікації
+    // вже додав user до запиту. Якщо user може бути відсутнім,
+    // вам слід додати перевірку if (!req.user) { ... }
     const userId = req.user!.id;
     const { entityId, entityType } = req.body as {
       entityId: string;
@@ -82,11 +84,12 @@ export const toggleLikeEntity = async (
  * Get whether the current user has liked, plus total like count
  */
 export const getLikeStatus = async (
-  req: AuthRequest,
+  req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
+    // req.user?.id використовується, оскільки user може бути необов'язковим для цього ендпоінту
     const userId = req.user?.id;
     const { entityId, entityType } = req.query as Record<string, string>;
 
@@ -125,7 +128,7 @@ export const getLikeStatus = async (
  * Get total like count only
  */
 export const getLikeCount = async (
-  req: AuthRequest,
+  req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -159,7 +162,7 @@ export const getLikeCount = async (
  * Top 10 posts by likes
  */
 export const getTopLikedPosts = async (
-  _req: AuthRequest,
+  _req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -180,7 +183,7 @@ export const getTopLikedPosts = async (
  * Top 10 museums by likes received
  */
 export const getTopLikedMuseums = async (
-  _req: AuthRequest,
+  _req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -202,7 +205,7 @@ export const getTopLikedMuseums = async (
  * Top 10 exhibitions by likes
  */
 export const getTopLikedExhibitions = async (
-  _req: AuthRequest,
+  _req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -223,7 +226,7 @@ export const getTopLikedExhibitions = async (
  * Top 10 paintings by likes
  */
 export const getTopLikedPaintings = async (
-  _req: AuthRequest,
+  _req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -239,4 +242,3 @@ export const getTopLikedPaintings = async (
     next(err);
   }
 };
-

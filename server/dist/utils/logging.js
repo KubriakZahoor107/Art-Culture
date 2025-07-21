@@ -7,3 +7,4 @@ const logger = winston.createLogger({
     ]
 });
 export default logger;
+//# sourceMappingURL=logging.js.map

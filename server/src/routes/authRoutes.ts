@@ -10,7 +10,7 @@ import {
   getCurrentUser,
   updateUserProfile,
 } from '../controllers/authController.js'
-import authenticateToken from '../middleware/authMiddleware.js'
+import { authenticateToken } from '../middleware/authMiddleware.js' // Змінено: імпортуємо authenticateToken як іменований експорт
 import authorize from '../middleware/roleMiddleware.js'
 import {
   uploadProfileLogoImages,

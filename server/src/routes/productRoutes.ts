@@ -14,8 +14,8 @@ import {
   updateProduct,
   // deleteProduct,  // Видалено, бо у контролері немає експорту deleteProduct
 } from "../controllers/productController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
-import authorize from "../middleware/roleMiddleware.js"
+import { authenticateToken } from "../middleware/authMiddleware.js" // Змінено: імпортуємо authenticateToken як іменований експорт
+import authorize from '../middleware/roleMiddleware.js'
 import uploadPaintings from "../middleware/productImageUploader.js"
 
 const router = express.Router()

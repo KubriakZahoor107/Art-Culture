@@ -1,11 +1,8 @@
-
-// server/src/routes/exhibitionRoutes.ts
-
 import { Router, Request, Response, NextFunction } from "express";
 import asyncHandler from "express-async-handler";
 import { body, validationResult } from "express-validator";
-import authenticateToken from "../middleware/authMiddleware.js";
-import authorize from "../middleware/roleMiddleware.js";
+import { authenticateToken } from "../middleware/authMiddleware.js"; // Змінено: імпортуємо authenticateToken як іменований експорт
+import authorize from '../middleware/roleMiddleware.js'
 import uploadExhibition from "../middleware/exhibitionImageUploader.js";
 import {
   createExhibitions,

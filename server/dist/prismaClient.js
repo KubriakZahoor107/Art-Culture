@@ -6,3 +6,4 @@ const prisma = new PrismaClient({
     datasources: { db: { url: cleanUrl } }
 });
 export default prisma;
+//# sourceMappingURL=prismaClient.js.map

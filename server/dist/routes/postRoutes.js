@@ -1,25 +1,28 @@
-// server/src/routes/postRoutes.ts
-import express from 'express';
-import { createPost, deletePost, getAllPosts, getPostById, updatePost, getCreatorsPosts, getAuthorsPosts, getExhibitionsPost, getMuseumsPost, getPostsByAuthorId, getPostByExhibitionId, getPostByMuseumId, upload, } from '../controllers/postController.js';
-import authenticateToken from '../middleware/authMiddleware.js';
+// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/routes/postRoutes.ts
+import express from "express";
+import { upload, createPost, getAllPosts, getPostById, updatePost, deletePost, getCreatorsPosts, getAuthorsPosts, getExhibitionsPost, getMuseumsPost, getPostsByAuthorId, getPostByExhibitionId, getPostByMuseumId, } from "../controllers/postController.js";
+import { authenticateToken } from "../middleware/authMiddleware.js"; // Змінено: імпортуємо authenticateToken як іменований експорт
+import authorize from '../middleware/roleMiddleware.js';
 const router = express.Router();
-// CREATE POST
-router.post('/', authenticateToken, upload.single('image'), createPost);
-// GET ALL APPROVED POSTS (optional filter by authorId)
-router.get('/', getAllPosts);
-// GET POST BY ID
-router.get('/:id', getPostById);
-// UPDATE POST
-router.put('/:id', authenticateToken, upload.single('image'), updatePost);
-// DELETE POST
-router.delete('/:id', authenticateToken, deletePost);
-// GET POSTS BY ROLE
-router.get('/creators', getCreatorsPosts);
-router.get('/authors', getAuthorsPosts);
-router.get('/exhibitions', getExhibitionsPost);
-router.get('/museums', getMuseumsPost);
-// GET POSTS BY ENTITY ID
-router.get('/by-author/:authorId', getPostsByAuthorId);
-router.get('/by-exhibition/:exhibitionId', getPostByExhibitionId);
-router.get('/by-museum/:museumId', getPostByMuseumId);
+// ── PUBLIC POSTS ──────────────────────────────────────────────────────────
+router.get("/", getAllPosts);
+router.get("/:id", getPostById);
+// Фільтрація по ролі автора
+router.get("/creators", getCreatorsPosts);
+router.get("/authors", getAuthorsPosts);
+// Фільтрація по конкретному автору
+router.get("/author/:authorId", getPostsByAuthorId);
+// Фільтрація по ролі exhibition та museum
+router.get("/exhibitions", getExhibitionsPost);
+router.get("/museums", getMuseumsPost);
+// Фільтрація по конкретному exhibition або museum
+router.get("/exhibition/:exhibitionId", getPostByExhibitionId);
+router.get("/museum/:museumId", getPostByMuseumId);
+// ── PROTECTED POSTS ───────────────────────────────────────────────────────
+router.use(authenticateToken);
+// Створення, оновлення, видалення — лише ADMIN чи EDITOR
+router.post("/", authorize("ADMIN", "EDITOR"), upload.single("file"), createPost);
+router.put("/:id", authorize("ADMIN", "EDITOR"), upload.single("file"), updatePost);
+router.delete("/:id", authorize("ADMIN", "EDITOR"), deletePost);
 export default router;
+//# sourceMappingURL=postRoutes.js.map

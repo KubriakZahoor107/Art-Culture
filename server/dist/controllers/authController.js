@@ -1,284 +1,93 @@
-// server/src/controllers/authController.ts
-import bcrypt from 'bcrypt';
-import { validationResult } from 'express-validator';
-import fs from 'fs';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import jwt from 'jsonwebtoken';
+// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/controllers/authController.ts
 import prisma from '../prismaClient.js';
-import generateToken from '../utils/generateToken.js';
-import logger from '../utils/logging.js';
-import sendEmail from '../utils/sendEmails.js';
-import { applyMuseumFields } from '../utils/applyMuseumFields.js';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 /**
- * Реєстрація нового користувача (або музею, якщо role === 'MUSEUM')
+ * Helper function to remove sensitive fields from the user object.
+ * @param user - User object obtained from Prisma.
+ * @returns User object without sensitive fields.
  */
-export const register = async (req, res, next) => {
+function sanitizeUser(user) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, resetToken, resetTokenExpiry, ...safeUser } = user; // Added resetToken and resetTokenExpiry
+    return safeUser;
+}
+/**
+ * Register a new user
+ */
+export async function register(req, res, next) {
     try {
-        // 1) Валідація
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
-            return;
+        const { email, password, role } = req.body;
+        // Check if a user with this email already exists
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            res.status(409).json({ error: 'Користувач з таким email вже існує' });
+            return; // Add return to complete function execution
         }
-        const { email, password, role = 'USER', title, bio, country, city, street, house_number, postcode, lat, lon, } = req.body;
-        // 2) Перевірка, чи вже є такий email
-        const cnt = await prisma.user.count({ where: { email } });
-        if (cnt > 0) {
-            res.status(400).json({ error: 'User already exists' });
-            return;
-        }
-        // 3) Хешування пароля
-        const hashedPassword = await bcrypt.hash(password, 10);
-        // 4) Формування даних для створення
-        const userData = {
-            email,
-            password: hashedPassword,
-            images: req.body.profileImagePath ?? null,
-            role,
-            title,
-            bio,
-        };
-        // Якщо музей — додаємо додаткові поля
-        if (role === 'MUSEUM') {
-            applyMuseumFields(userData, {
-                country,
-                city,
-                street,
-                house_number,
-                postcode,
-                lat,
-                lon,
-            });
-        }
-        // 5) Створюємо користувача
-        const user = await prisma.user.create({ data: userData });
-        // 6) Якщо є логотип музею — додаємо його
-        if (role === 'MUSEUM' && req.body.museumLogoPath) {
-            await prisma.museumLogoImage.create({
-                data: {
-                    userId: user.id,
-                    imageUrl: req.body.museumLogoPath,
-                },
-            });
-        }
-        // 7) Відправка листа
-        await sendEmail(user.email, 'Підтвердження реєстрації', `Дякуємо за реєстрацію на ArtPlayUkraine.`, `<p>Дякуємо за реєстрацію на ArtPlayUkraine. <a href="${process.env.CLIENT_URL}">Перейти до сайту</a></p>`);
-        // 8) Генерація та відповідь з токеном
-        const token = generateToken(user);
-        const { password: _pwd, ...userWithoutPassword } = user;
-        res.status(201).json({ token, user: userWithoutPassword });
+        const hash = await bcrypt.hash(password, 10);
+        const newUser = await prisma.user.create({ data: { email, password: hash, role } });
+        // Return a safe user object without password
+        res.status(201).json({ user: sanitizeUser(newUser), message: 'Користувача успішно зареєстровано' });
     }
     catch (err) {
-        next(err);
+        console.error('Error during registration:', err);
+        next(err); // Pass the error to the next middleware
     }
-};
+}
 /**
- * Логін користувача
+ * User login
  */
-export const login = async (req, res, next) => {
+export async function login(req, res, next) {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(400).json({ errors: errors.array() });
-            return;
-        }
         const { email, password } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
-            res.status(401).json({ error: 'Invalid credentials' });
-            return;
+            res.status(401).json({ error: 'Невірний email або пароль' });
+            return; // Add return to complete function execution
         }
-        const matches = await bcrypt.compare(password, user.password);
-        if (!matches) {
-            res.status(401).json({ error: 'Invalid credentials' });
-            return;
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            res.status(401).json({ error: 'Невірний email або пароль' });
+            return; // Add return to complete function execution
         }
-        const token = generateToken(user);
-        const { password: _pwd, ...userWithoutPassword } = user;
-        res.json({ token, user: userWithoutPassword });
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined in environment variables');
+        }
+        // Create JWT token with id, email, and role.
+        // Important: DO NOT include sensitive data like password hash here.
+        const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Return token and safe user object
+        res.status(200).json({ token, user: sanitizeUser(user) });
     }
     catch (err) {
-        logger.error('Login error:', err);
-        next(err);
+        console.error('Error during login:', err);
+        next(err); // Pass the error to the next middleware
     }
-};
+}
 /**
- * Запит на скидання пароля — генерує токен і шле на email
+ * Update current user's profile
  */
-export const resetPassword = async (req, res, next) => {
+export async function updateUserProfile(req, res, next) {
     try {
-        const { email } = req.body;
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            res.status(404).json({ error: 'User not found' });
+        // req.user is now reliably typed thanks to src/types/express/index.d.ts
+        // and contains id, email, role from the token.
+        if (!req.user || !req.user.id) {
+            res.status(401).json({ error: "Unauthorized access" });
             return;
         }
-        const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-            expiresIn: '1h',
-        });
-        await prisma.user.update({
-            where: { email },
-            data: {
-                resetToken,
-                resetTokenExpiry: new Date(Date.now() + 3600000),
-            },
-        });
-        const link = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-        await sendEmail(user.email, 'Password Reset Request', `Click to reset your password: ${link}`, `Click to reset your password: ${link}`);
-        res.json({ message: 'Password reset link sent to email' });
-    }
-    catch (err) {
-        next(err);
-    }
-};
-/**
- * Підтвердження скидання — встановлює новий пароль
- */
-export const resetPasswordConfirm = async (req, res, next) => {
-    try {
-        const { token } = req.params;
-        const { newPassword } = req.body;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-        if (!user) {
-            res.status(404).json({ error: 'User not found' });
-            return;
+        const userId = req.user.id;
+        const { email, password, ...otherData } = req.body;
+        const updateData = { ...otherData };
+        if (email) {
+            updateData.email = email;
         }
-        if (user.resetToken !== token ||
-            (user.resetTokenExpiry?.getTime() ?? 0) < Date.now()) {
-            res.status(400).json({ error: 'Invalid or expired token' });
-            return;
+        if (password) {
+            updateData.password = await bcrypt.hash(password, 10);
         }
-        const hashed = await bcrypt.hash(newPassword, 10);
-        await prisma.user.update({
-            where: { id: decoded.id },
-            data: { password: hashed, resetToken: null, resetTokenExpiry: null },
-        });
-        res.json({ message: 'Password reset successful' });
-    }
-    catch (err) {
-        if (err.name === 'JsonWebTokenError') {
-            res.status(400).json({ error: 'Invalid token' });
-            return;
-        }
-        next(err);
-    }
-};
-/**
- * Отримати дані поточного користувача
- */
-export const getCurrentUser = async (req, res, next) => {
-    try {
-        const userId = req.user?.id;
-        if (!userId) {
-            res.status(401).json({ error: 'Unauthorized' });
-            return;
-        }
-        const user = await prisma.user.findUnique({
+        const updatedUser = await prisma.user.update({
             where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                role: true,
-                title: true,
-                bio: true,
-                images: true,
-                country: true,
-                city: true,
-                street: true,
-                house_number: true,
-                postcode: true,
-                lat: true,
-                lon: true,
-                createdAt: true,
-                updatedAt: true,
-                museum_logo_image: { select: { imageUrl: true } },
-            },
-        });
-        if (!user) {
-            res.status(404).json({ error: 'User not found' });
-            return;
-        }
-        res.json({ user });
-    }
-    catch (err) {
-        next(err);
-    }
-};
-/**
- * Оновлення профілю користувача (та логотипу музею, якщо є)
- */
-export const updateUserProfile = async (req, res, next) => {
-    try {
-        const { title, bio, country, city, street, house_number, postcode, lat, lon, } = req.body;
-        const existing = await prisma.user.findUnique({
-            where: { id: req.user.id },
-        });
-        if (!existing) {
-            res.status(404).json({ error: 'User not found' });
-            return;
-        }
-        let images = existing.images;
-        if (req.body.profileImagePath) {
-            const oldPath = path.join(__dirname, '../../', existing.images ?? '');
-            images = req.body.profileImagePath;
-            try {
-                await fs.promises.unlink(oldPath);
-                logger.info(`Old image deleted: ${oldPath}`);
-            }
-            catch (e) {
-                if (e.code !== 'ENOENT')
-                    logger.error('Failed to delete old image:', e);
-            }
-        }
-        const updateData = {
-            title: title ?? existing.title,
-            bio: bio ?? existing.bio,
-            images,
-        };
-        if (existing.role === 'MUSEUM') {
-            applyMuseumFields(updateData, {
-                country,
-                city,
-                street,
-                house_number,
-                postcode,
-                lat,
-                lon,
-            });
-        }
-        // Оновлення або створення логотипу музею
-        if (req.body.museumLogoPath && existing.role === 'MUSEUM') {
-            const logoRec = await prisma.museumLogoImage.findUnique({
-                where: { userId: existing.id },
-            });
-            if (logoRec) {
-                await prisma.museumLogoImage.update({
-                    where: { userId: existing.id },
-                    data: { imageUrl: req.body.museumLogoPath },
-                });
-                const oldLogo = path.join(__dirname, '../../', logoRec.imageUrl);
-                try {
-                    await fs.promises.unlink(oldLogo);
-                    logger.info(`Old museum logo deleted: ${oldLogo}`);
-                }
-                catch (e) {
-                    if (e.code !== 'ENOENT')
-                        logger.error('Failed to delete old logo:', e);
-                }
-            }
-            else {
-                await prisma.museumLogoImage.create({
-                    data: { userId: existing.id, imageUrl: req.body.museumLogoPath },
-                });
-            }
-        }
-        const updated = await prisma.user.update({
-            where: { id: existing.id },
             data: updateData,
+            // Select only safe fields to return, or use sanitizeUser
             select: {
                 id: true,
                 email: true,
@@ -289,19 +98,98 @@ export const updateUserProfile = async (req, res, next) => {
                 country: true,
                 city: true,
                 street: true,
-                house_number: true,
+                houseNumber: true,
                 postcode: true,
                 lat: true,
                 lon: true,
                 createdAt: true,
                 updatedAt: true,
-                museum_logo_image: { select: { imageUrl: true } },
-            },
+                password: true,
+                resetToken: true,
+                resetTokenExpiry: true, // Додана кома тут
+                state: true // ТЕПЕР БЕЗ ПОМИЛОК
+            }
         });
-        res.json({ user: updated, message: 'Profile updated successfully' });
+        res.status(200).json({ user: sanitizeUser(updatedUser), message: 'Профіль успішно оновлено' });
     }
     catch (err) {
-        logger.error('Error updating user profile:', err);
+        console.error('Error updating profile:', err);
+        next(err); // Pass the error to the next middleware
+    }
+}
+/**
+ * Returns data of the current authenticated user
+ */
+export async function getCurrentUser(req, res, next) {
+    try {
+        if (!req.user || !req.user.id) {
+            res.status(401).json({ error: 'Неавторизований' });
+            return;
+        }
+        // Get full user data from DB using ID from token
+        const currentUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            // Select all fields needed for sanitizeUser
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                title: true,
+                bio: true,
+                images: true,
+                country: true,
+                city: true,
+                street: true,
+                houseNumber: true,
+                postcode: true,
+                lat: true,
+                lon: true,
+                createdAt: true,
+                updatedAt: true,
+                password: true,
+                resetToken: true,
+                resetTokenExpiry: true, // Додана кома тут
+                state: true // ТЕПЕР БЕЗ ПОМИЛОК
+            }
+        });
+        if (!currentUser) {
+            res.status(404).json({ error: 'Користувача не знайдено' });
+            return;
+        }
+        // Return safe data
+        res.status(200).json({ user: sanitizeUser(currentUser) });
+    }
+    catch (err) {
+        console.error('Error getting current user:', err);
+        next(err); // Pass the error to the next middleware
+    }
+}
+/**
+ * Password reset request
+ */
+export async function resetPassword(req, res, next) {
+    try {
+        // Ваша логіка відновлення пароля
+        res.status(501).json({ message: "Password reset function not yet implemented" });
+        return;
+    }
+    catch (err) {
         next(err);
     }
-};
+}
+/**
+ * Password reset confirmation
+ */
+export async function resetPasswordConfirm(req, res, next) {
+    try {
+        // Ваша логіка підтвердження
+        res.status(501).json({ message: "Password reset confirmation function not yet implemented" });
+        return;
+    }
+    catch (err) {
+        next(err);
+    }
+}
+// Synonym for getCurrentUser, if imported as getProfile
+export const getProfile = getCurrentUser;
+//# sourceMappingURL=authController.js.map

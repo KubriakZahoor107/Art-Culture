@@ -5,12 +5,15 @@
     "node": ">=20.0.0"
   },
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "dev": "nodemon --watch src --ext ts --exec \"TS_NODE_TRANSPILE_ONLY=1 node --loader ts-node/esm src/index.ts\"",
+    "prisma": "prisma",
+    "lint": "eslint \"src/**/*.{ts,js}\"",
+    "format": "prettier --write .",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles --forceExit"
   },
   "dependencies": {
@@ -47,8 +50,9 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^20.19.7",
+    "@types/node": "^20.19.9",
     "@types/nodemailer": "^6",
+    "@types/superagent": "^4.1.18",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
@@ -69,21 +73,40 @@
     "typescript": "^5"
   },
   "jest": {
+    "roots": [
+      "<rootDir>/src"
+    ],
     "preset": "ts-jest/presets/default-esm",
-    "globals": {
-      "ts-jest": { "useESM": true }
-    },
     "testEnvironment": "node",
-    "roots": ["<rootDir>/src"],
-    "moduleFileExtensions": ["ts", "js", "json"],
-    "testMatch": ["**/?(*.)+(test|spec).ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ],
+    "testMatch": [
+      "**/?(*.)+(test|spec).[tj]s?(x)"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest", { "useESM": true }]
+      "^.+\\.(ts|tsx)$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
     },
     "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
+      "^@/(.*)\\.js$": "<rootDir>/src/$1",
+      "^(.*)\\.js$": "$1"
     },
-    "transformIgnorePatterns": ["/node_modules/"],
-    "testPathIgnorePatterns": ["/dist/"]
+    "transformIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client" // ЗМІНЕНО: import type на import
 import { Request, Response, NextFunction } from "express"
 import multer, { FileFilterCallback } from "multer"
 import fs from "fs"
@@ -55,11 +55,14 @@ export const createPost = async (
       return
     }
     const userId = req.user.id
-    const { title_en, title_uk, content_en, content_uk } = req.body as {
+    const { title_en, title_uk, content_en, content_uk, creatorId, exhibitionId, museumId } = req.body as {
       title_en: string
       title_uk?: string
       content_en: string
       content_uk?: string
+      creatorId?: number
+      exhibitionId?: number
+      museumId?: number
     }
 
     let imageUrl: string | null = null
@@ -68,15 +71,19 @@ export const createPost = async (
     }
 
     // Будуємо об'єкт, додаючи необов'язкові поля тільки якщо вони задані
-    const postData = {
+    const postData: Prisma.PostCreateInput = {
       title_en,
       content_en,
-      images: imageUrl,
+      // Використовуємо тернарний оператор для явного присвоєння Prisma.JsonNull або string
+      images: imageUrl === null ? Prisma.JsonNull : (imageUrl as Prisma.InputJsonValue),
       status: "PENDING",
       author: { connect: { id: userId } },
-      ...(title_uk ? { title_uk } : {}),
-      ...(content_uk ? { content_uk } : {}),
-    } as Prisma.PostCreateInput
+      ...(title_uk && { title_uk }), // Тепер title_uk є String? у схемі
+      ...(content_uk && { content_uk }), // Тепер content_uk є String? у схемі
+      ...(creatorId && { creatorId }),
+      ...(exhibitionId && { exhibitionId }),
+      ...(museumId && { museumId }),
+    }
 
     const post = await prisma.post.create({
       data: postData,
@@ -108,7 +115,7 @@ export const getAllPosts = async (
     res.json(posts)
   } catch (err: any) {
     if (err.code === "P2021") {
-      res.json([])
+      res.json({ posts: [] })
       return
     }
     next(err)
@@ -167,22 +174,35 @@ export const updatePost = async (
       return
     }
 
-    let imageUrl = existing.images
+    let newImageUrl: string | null = null
     if (req.file) {
-      if (existing.images) {
-        fs.unlinkSync(path.join(__dirname, "../../uploads", existing.images))
+      // Видаляємо старе зображення, якщо воно існує і є дійсним шляхом
+      if (existing.images !== null && existing.images !== undefined) {
+        try {
+          // existing.images є JsonValue, тому потрібно перетворити на string
+          const imagePathInDb = existing.images as string; // Припускаємо, що це JSON-рядок, який ми зберігали
+          const oldImagePath = path.join(__dirname, "../../uploads", imagePathInDb);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (e) {
+          logger.error(`Error deleting old image for post ${id}:`, e);
+        }
       }
-      imageUrl = `/uploads/postImages/${req.file.filename}`
+      newImageUrl = `/uploads/postImages/${req.file.filename}`
+    } else {
+      newImageUrl = existing.images as string | null; // Зберігаємо існуюче зображення, якщо нове не завантажено
     }
 
     const updated = await prisma.post.update({
       where: { id },
       data: {
         title_en: req.body.title_en,
-        title_uk: req.body.title_uk ?? null,
+        title_uk: req.body.title_uk ?? null, // Використовуємо ?? null для необов'язкових полів
         content_en: req.body.content_en,
-        content_uk: req.body.content_uk ?? null,
-        images: imageUrl,
+        content_uk: req.body.content_uk ?? null, // Використовуємо ?? null для необов'язкових полів
+        // Використовуємо тернарний оператор для явного присвоєння Prisma.JsonNull або string
+        images: newImageUrl === null ? Prisma.JsonNull : (newImageUrl as Prisma.InputJsonValue),
       },
       include: { author: { select: { id: true, email: true, title: true } } },
     })
@@ -217,8 +237,16 @@ export const deletePost = async (
       return
     }
 
-    if (existing.images) {
-      fs.unlinkSync(path.join(__dirname, "../../uploads", existing.images))
+    if (existing.images !== null && existing.images !== undefined) {
+      try {
+        const imagePathInDb = existing.images as string; // Припускаємо, що це JSON-рядок, який ми зберігали
+        const oldImagePath = path.join(__dirname, "../../uploads", imagePathInDb);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      } catch (e) {
+        logger.error(`Error deleting old image for post ${id}:`, e);
+      }
     }
 
     await prisma.post.delete({ where: { id } })
@@ -264,7 +292,7 @@ export function makeByParamFinder(
         return
       }
       const posts = await prisma.post.findMany({
-        where: { [param]: id } as any,
+        where: { [param]: id },
         include: {
           author: { select: { id: true, email: true, title: true, role: true } },
         },

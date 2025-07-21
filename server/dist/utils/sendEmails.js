@@ -23,3 +23,4 @@ const sendEmail = async (to, subject, text, html) => {
     await transporter.sendMail(mailOptions);
 };
 export default sendEmail;
+//# sourceMappingURL=sendEmails.js.map

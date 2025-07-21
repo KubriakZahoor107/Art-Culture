@@ -1,14 +1,18 @@
-// exhibitionImageUploader.js
+// exhibitionImageUploader.ts
 import multer, { FileFilterCallback, StorageEngine } from "multer"
 import path, { dirname } from "path"
 import sharp from "sharp"
 import { fileURLToPath } from "url"
+// Імпортуємо Request, Response, NextFunction без 'type'
+// Оскільки їх типи розширені у src/types/express.d.ts,
+// вони вже глобально доступні або можуть бути імпортовані як звичайні модулі.
 import { Request, Response, NextFunction } from "express"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const storage: StorageEngine = multer.memoryStorage() // Store files in memory
+
 // Define the fileFilter function
 const fileFilter = (
   req: Request,
@@ -23,6 +27,7 @@ const fileFilter = (
   if (extname && mimetype) {
     return cb(null, true)
   } else {
+    // Передаємо MulterError як перший аргумент cb
     cb(
       new multer.MulterError(
         "LIMIT_UNEXPECTED_FILE",
@@ -31,6 +36,7 @@ const fileFilter = (
     )
   }
 }
+
 const upload = multer({
   storage,
   fileFilter,
@@ -42,10 +48,17 @@ const processImages = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.files) return next()
+  // Явно приводимо req.files до Express.Multer.File[],
+  // оскільки ми використовуємо upload.array().
+  const files = req.files as Express.Multer.File[] | undefined;
+
+  if (!files || files.length === 0) {
+    return next(); // Якщо файлів немає, просто переходимо до наступного middleware
+  }
+
   try {
     await Promise.all(
-      req.files.map(async (file) => {
+      files.map(async (file) => { // Тепер 'files' є масивом, і .map() працює коректно
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9)
         const filename = uniqueSuffix + ".webp"
         const outputPath = path.join(
@@ -70,6 +83,6 @@ const processImages = async (
 }
 
 export default {
-  upload: upload.array("exhibitionImages", 10),
+  upload: upload.array("exhibitionImages", 10), // Використовуємо .array()
   processImages,
 }

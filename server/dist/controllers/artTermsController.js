@@ -3,39 +3,41 @@ import { validationResult } from 'express-validator';
 // GET /api/art-terms/:lang
 export const getArtTermsByLang = async (req, res, next) => {
     try {
+        // валідуємо параметр lang
         let lang = req.params.lang?.split('-')[0] ?? 'uk';
         if (lang !== 'uk' && lang !== 'en')
             lang = 'uk';
+        // вибираємо сортування
         const orderBy = lang === 'uk'
             ? { title_uk: 'asc' }
             : { title_en: 'asc' };
+        // отримуємо всі терміни без підвантаження продукту
         const artTerms = await prisma.artTerm.findMany({
             orderBy,
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
         });
-        // Підготуємо масив термінів із літерою
-        const terms = artTerms.map(term => ({
-            id: term.id,
-            letter: (lang === 'uk' ? term.title_uk : term.title_en)[0],
-            title: lang === 'uk' ? term.title_uk : term.title_en,
-            description: lang === 'uk' ? term.description_uk : term.description_en,
-            highlightedProduct: term.highlightedProduct,
-        }));
-        // Вибираємо перший термін кожної літери
+        // формуємо масив з однією літерою
+        const terms = artTerms.map(term => {
+            const title = lang === 'uk' ? term.title_uk : term.title_en;
+            const description = lang === 'uk' ? term.description_uk : term.description_en;
+            return {
+                id: term.id,
+                letter: title.charAt(0),
+                title,
+                description,
+                highlightedProductId: term.highlightedProductId,
+            };
+        });
+        // лишаємо по першому терміну кожної літери
         const firstTerms = [];
-        for (const item of terms) {
-            const exists = firstTerms.some(t => t.letter === item.letter);
-            if (!exists)
-                firstTerms.push(item);
+        for (const t of terms) {
+            if (!firstTerms.some(ft => ft.letter === t.letter)) {
+                firstTerms.push(t);
+            }
         }
         res.json({ artTerms: firstTerms });
     }
     catch (error) {
-        console.error('Error fetching art terms by lang:', error);
+        console.error('Error in getArtTermsByLang:', error);
         next(error);
     }
 };
@@ -47,17 +49,19 @@ export const getLastArtTerms = async (req, res, next) => {
             lang = 'uk';
         const artTerms = await prisma.artTerm.findMany({
             orderBy: { createdAt: 'desc' },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
             take: 15,
         });
-        res.json({ artTerms });
+        // повертаємо тільки базові поля та highlightedProductId
+        const response = artTerms.map(term => ({
+            id: term.id,
+            title: lang === 'uk' ? term.title_uk : term.title_en,
+            description: lang === 'uk' ? term.description_uk : term.description_en,
+            highlightedProductId: term.highlightedProductId,
+        }));
+        res.json({ artTerms: response });
     }
     catch (error) {
-        console.error('Error fetching last art terms:', error);
+        console.error('Error in getLastArtTerms:', error);
         next(error);
     }
 };
@@ -69,7 +73,7 @@ export const getArtTermsByLetter = async (req, res, next) => {
             res.status(400).json({ error: 'Invalid letter' });
             return;
         }
-        const letter = raw[0];
+        const letter = raw.charAt(0);
         const artTerms = await prisma.artTerm.findMany({
             where: {
                 OR: [
@@ -77,19 +81,18 @@ export const getArtTermsByLetter = async (req, res, next) => {
                     { title_en: { startsWith: letter } },
                 ],
             },
-            orderBy: letter === 'uk'
-                ? { title_uk: 'asc' }
-                : { title_en: 'asc' },
-            include: {
-                highlightedProduct: {
-                    include: { images: true, author: true },
-                },
-            },
+            orderBy: { title_uk: 'asc' },
         });
-        res.json({ artTerms });
+        const response = artTerms.map(term => ({
+            id: term.id,
+            title: term.title_uk,
+            description: term.description_uk,
+            highlightedProductId: term.highlightedProductId,
+        }));
+        res.json({ artTerms: response });
     }
     catch (error) {
-        console.error('Error fetching art terms by letter:', error);
+        console.error('Error in getArtTermsByLetter:', error);
         next(error);
     }
 };
@@ -101,51 +104,52 @@ export const getArtTermById = async (req, res, next) => {
             res.status(400).json({ error: 'Invalid id' });
             return;
         }
-        const artTerm = await prisma.artTerm.findFirstOrThrow({
+        const term = await prisma.artTerm.findUniqueOrThrow({
             where: { id },
-            include: {
-                highlightedProduct: {
-                    include: { author: true, images: true },
-                },
+        });
+        const lang = req.query.lang?.split('-')[0] ?? 'uk';
+        const title = lang === 'uk' ? term.title_uk : term.title_en;
+        const description = lang === 'uk' ? term.description_uk : term.description_en;
+        res.json({
+            artTerm: {
+                id: term.id,
+                title,
+                description,
+                highlightedProductId: term.highlightedProductId,
             },
         });
-        res.json({ artTerm });
     }
     catch (error) {
-        console.error('Error fetching art term by id:', error);
+        console.error('Error in getArtTermById:', error);
         next(error);
     }
 };
 // GET /api/art-terms/pages
 export const getPagesArtTerms = async (req, res, next) => {
     try {
-        // 1) Валідація express-validator
+        // валідація
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             res.status(400).json({ errors: errors.array() });
             return;
         }
-        // 2) Пагінація
+        // пагінація
         const page = Math.max(parseInt(req.query.page ?? '1', 10), 1);
         const pageSize = Math.min(parseInt(req.query.pageSize ?? '20', 10), 20);
-        // 3) Сортування
-        const validColumns = [
+        // сортування
+        const validCols = [
             ['createdAt', 'desc'],
-            ['title', 'asc'],
-            ['status', 'asc'],
+            ['title_uk', 'asc'],
+            ['title_en', 'asc'],
         ];
-        const orderBy = req.query.orderBy ?? validColumns[0][0];
-        if (!validColumns.some(([col]) => col === orderBy)) {
+        const orderBy = req.query.orderBy ?? validCols[0][0];
+        if (!validCols.some(([col]) => col === orderBy)) {
             res.status(400).json({ error: 'Invalid sort column' });
             return;
         }
-        const [, defaultDir] = validColumns.find(([col]) => col === orderBy);
+        const [, defaultDir] = validCols.find(([col]) => col === orderBy);
         const orderDir = req.query.orderDir ?? defaultDir;
-        if (!['asc', 'desc'].includes(orderDir)) {
-            res.status(400).json({ error: 'Invalid sort direction' });
-            return;
-        }
-        // 4) Фільтр пошуку
+        // пошук
         const search = req.query.search ?? '';
         const filter = search
             ? {
@@ -157,24 +161,26 @@ export const getPagesArtTerms = async (req, res, next) => {
                 ],
             }
             : {};
-        // 5) Запит до БД
+        // запит
         const artTerms = await prisma.artTerm.findMany({
             where: filter,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+            orderBy: { [orderBy]: orderDir },
             select: {
                 id: true,
                 title_uk: true,
                 title_en: true,
                 description_uk: true,
                 description_en: true,
+                highlightedProductId: true,
             },
-            skip: (page - 1) * pageSize,
-            take: pageSize,
-            orderBy: { [orderBy]: orderDir },
         });
         res.json({ artTerms });
     }
     catch (error) {
-        console.error('Error fetching paged art terms:', error);
+        console.error('Error in getPagesArtTerms:', error);
         next(error);
     }
 };
+//# sourceMappingURL=artTermsController.js.map

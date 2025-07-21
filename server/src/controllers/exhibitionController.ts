@@ -1,11 +1,11 @@
 // server/src/controllers/exhibitionController.ts
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response, NextFunction } from 'express' // Використовуємо стандартний Request
 import prisma from '../prismaClient.js'
 import logger from '../utils/logging.js'
 
 
 export const createExhibitions = async (
-  req: AuthRequest,
+  req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -69,8 +69,10 @@ export const createExhibitions = async (
         longitude: longitude != null ? parseFloat(longitude) : null,
         address: address || null,
         images: { create: images },
-        createdBy: { connect: { id: userId } },
-        museum: { connect: { id: parsedMuseumId } },
+        // Виправлено: 'createdBy' на 'createdById' для підключення за ID
+        createdById: userId,
+        // Виправлено: 'museum' на 'museumId' для підключення за ID
+        museumId: parsedMuseumId,
         exhibitionArtists: {
           create: artistIds.map((aid: number) => ({
             artist: { connect: { id: aid } },
@@ -110,6 +112,13 @@ export const getAllExhibitions = async (
         images: true,
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
+        // Додано: включення інформації про музей та творця, якщо потрібно
+        user_Exhibition_museumIdTouser: { // Відношення до музею
+          include: { museum_logo_images: true }
+        },
+        user_Exhibition_createdByIdTouser: { // Відношення до творця
+          select: { id: true, email: true, title: true }
+        }
       },
       orderBy: { startDate: 'desc' },
     })
@@ -137,6 +146,13 @@ export const getExhibitionById = async (
         images: true,
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
+        // Додано: включення інформації про музей та творця, якщо потрібно
+        user_Exhibition_museumIdTouser: {
+          include: { museum_logo_images: true }
+        },
+        user_Exhibition_createdByIdTouser: {
+          select: { id: true, email: true, title: true }
+        }
       },
     })
     if (!exhibition) {
@@ -151,7 +167,7 @@ export const getExhibitionById = async (
 }
 
 export const getMyExhibitions = async (
-  req: AuthRequest,
+  req: Request, // Змінено з AuthRequest на Request
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -163,6 +179,13 @@ export const getMyExhibitions = async (
         images: true,
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
+        // Додано: включення інформації про музей та творця, якщо потрібно
+        user_Exhibition_museumIdTouser: {
+          include: { museum_logo_images: true }
+        },
+        user_Exhibition_createdByIdTouser: {
+          select: { id: true, email: true, title: true }
+        }
       },
       orderBy: { startDate: 'desc' },
     })
@@ -186,7 +209,16 @@ export const getProductsByExhibitionId = async (
     }
     const record = await prisma.exhibition.findUnique({
       where: { id: exhibitionId },
-      include: { products: { include: { product: true } } },
+      include: {
+        products: { include: { product: true } },
+        // Додано: включення інформації про музей та творця, якщо потрібно
+        user_Exhibition_museumIdTouser: {
+          include: { museum_logo_images: true }
+        },
+        user_Exhibition_createdByIdTouser: {
+          select: { id: true, email: true, title: true }
+        }
+      },
     })
     if (!record) {
       res.status(404).json({ error: 'Exhibition not found' })
@@ -218,6 +250,13 @@ export const updateExhibition = async (
         images: true,
         exhibitionArtists: { include: { artist: true } },
         products: { include: { product: true } },
+        // Додано: включення інформації про музей та творця, якщо потрібно
+        user_Exhibition_museumIdTouser: {
+          include: { museum_logo_images: true }
+        },
+        user_Exhibition_createdByIdTouser: {
+          select: { id: true, email: true, title: true }
+        }
       },
     })
     res.status(200).json({ updated })

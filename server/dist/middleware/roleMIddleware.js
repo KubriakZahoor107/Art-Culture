@@ -1,18 +1,17 @@
-const role = (...roles) => {
+/**
+ * Middleware: дозволяє доступ лише ролям із переліку
+ */
+export default function authorize(...allowedRoles) {
     return (req, res, next) => {
         if (!req.user) {
-            console.error('No user found on request');
-            return res.status(401).json({ error: 'Unauthorized' });
+            res.status(401).json({ error: "Unauthorized: no user in request" });
+            return;
         }
-        const userRole = req.user.role.trim().toLowerCase();
-        const allowedRoles = roles.map(r => r.toLowerCase());
-        console.log('role middleware - req.user.role:', userRole);
-        console.log('Allowed roles:', allowedRoles);
-        if (allowedRoles.length && !allowedRoles.includes(userRole)) {
-            console.error(`User role "${userRole}" is not allowed`);
-            return res.status(403).json({ error: 'Forbidden' });
+        if (!allowedRoles.includes(req.user.role)) {
+            res.status(403).json({ error: "Forbidden: insufficient rights" });
+            return;
         }
         next();
     };
-};
-export default role;
+}
+//# sourceMappingURL=roleMiddleware.js.map

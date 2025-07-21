@@ -1,5 +1,3 @@
-// File: /Users/konstantinkubriak/Desktop/Art-Culture/server/src/routes/adminRoutes.ts
-
 import express from "express"
 import {
     getAllUsers,
@@ -7,9 +5,8 @@ import {
     updateUser,
     deleteUser,
 } from "../controllers/adminController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
-import authorize from "../middleware/roleMiddleware.js"
-
+import { authenticateToken } from "../middleware/authMiddleware.js" // Змінено: імпортуємо authenticateToken як іменований експорт
+import authorize from '../middleware/roleMiddleware.js'
 const router = express.Router()
 
 // Усі admin-маршрути під цим префіксом захищені

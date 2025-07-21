@@ -1,7 +1,8 @@
 import prisma from "../prismaClient.js";
 import { body, validationResult } from "express-validator";
 import type { Request, Response, NextFunction, Router } from "express";
-import { authenticateToken, authorize } from "../middleware/authMiddleware.js";
+import { authenticateToken } from "../middleware/authMiddleware.js"; // Імпортуємо authenticateToken як іменований
+import authorize from '../middleware/roleMiddleware.js'
 
 export const getAllAdminPosts = async (
     req: Request,
@@ -103,14 +104,14 @@ export const registerAdminPostRoutes = (router: Router): void => {
     router.get(
         "/pending-posts",
         authenticateToken,
-        authorize("ADMIN"),
+        authorize("ADMIN"), // Використовуємо authorize
         getPendingPosts
     );
 
     router.get(
         "/posts",
         authenticateToken,
-        authorize("ADMIN"),
+        authorize("ADMIN"), // Використовуємо authorize
         [
             body("page").optional().isInt({ min: 1 }),
             body("pageSize").optional().isInt({ min: 1, max: 20 }),
@@ -125,13 +126,13 @@ export const registerAdminPostRoutes = (router: Router): void => {
     router.patch(
         "/posts/:id/approve",
         authenticateToken,
-        authorize("ADMIN"),
+        authorize("ADMIN"), // Використовуємо authorize
         approvePost
     );
     router.patch(
         "/posts/:id/reject",
         authenticateToken,
-        authorize("ADMIN"),
+        authorize("ADMIN"), // Використовуємо authorize
         rejectPost
     );
 };

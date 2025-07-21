@@ -23,3 +23,4 @@ export function applyMuseumFields(target, source) {
         target[field] = raw != null ? parseFloat(String(raw)) : null;
     }
 }
+//# sourceMappingURL=applyMuseumFields.js.map

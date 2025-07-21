@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"; // ЗМІНЕНО: import type на import
 import multer from "multer";
 import fs from "fs";
 import path, { dirname } from "path";
@@ -10,12 +11,12 @@ const __dirname = dirname(__filename);
 // 📦 Налаштування Multer
 const storage = multer.diskStorage({
     destination(req, file, cb) {
-        const uploadPath = path.join(__dirname, "../../uploads");
+        const uploadPath = path.join(__dirname, "../../uploads", "postImages");
         fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
     },
     filename(req, file, cb) {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
         cb(null, uniqueSuffix + path.extname(file.originalname));
     },
 });
@@ -33,30 +34,36 @@ export const upload = multer({
     fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 },
 });
-// ————————————————
-// CREATE POST
-// ————————————————
+// === CREATE POST ===
 export const createPost = async (req, res, next) => {
     try {
-        const { title_en, title_uk, content_en, content_uk } = req.body;
+        if (!req.user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
         const userId = req.user.id;
+        const { title_en, title_uk, content_en, content_uk, creatorId, exhibitionId, museumId } = req.body;
         let imageUrl = null;
         if (req.file) {
-            imageUrl = `/uploads/${req.file.filename}`;
+            imageUrl = `/uploads/postImages/${req.file.filename}`;
         }
+        // Будуємо об'єкт, додаючи необов'язкові поля тільки якщо вони задані
+        const postData = {
+            title_en,
+            content_en,
+            // Використовуємо тернарний оператор для явного присвоєння Prisma.JsonNull або string
+            images: imageUrl === null ? Prisma.JsonNull : imageUrl,
+            status: "PENDING",
+            author: { connect: { id: userId } },
+            ...(title_uk && { title_uk }), // Тепер title_uk є String? у схемі
+            ...(content_uk && { content_uk }), // Тепер content_uk є String? у схемі
+            ...(creatorId && { creatorId }),
+            ...(exhibitionId && { exhibitionId }),
+            ...(museumId && { museumId }),
+        };
         const post = await prisma.post.create({
-            data: {
-                title_en,
-                title_uk,
-                content_en,
-                content_uk,
-                images: imageUrl,
-                author: { connect: { id: userId } },
-                status: "PENDING",
-            },
-            include: {
-                author: { select: { id: true, email: true, title: true } },
-            },
+            data: postData,
+            include: { author: { select: { id: true, email: true, title: true } } },
         });
         res.status(201).json(post);
     }
@@ -64,15 +71,11 @@ export const createPost = async (req, res, next) => {
         next(err);
     }
 };
-// ————————————————
-// GET ALL APPROVED POSTS
-// ————————————————
-export const getAllPosts = async (_req, res, next) => {
+// === READ ALL APPROVED POSTS ===
+export const getAllPosts = async (req, res, next) => {
     try {
-        const { authorId } = _req.query;
-        const filter = authorId
-            ? { authorId: parseInt(authorId, 10) }
-            : {};
+        const authorId = req.query.authorId;
+        const filter = authorId ? { authorId: parseInt(authorId, 10) } : {};
         const posts = await prisma.post.findMany({
             where: { status: "APPROVED", ...filter },
             include: { author: { select: { id: true, email: true, title: true } } },
@@ -81,18 +84,17 @@ export const getAllPosts = async (_req, res, next) => {
         res.json(posts);
     }
     catch (err) {
-        if (err.code === 'P2021') {
-            return res.json([]);
+        if (err.code === "P2021") {
+            res.json({ posts: [] });
+            return;
         }
         next(err);
     }
 };
-// ————————————————
-// GET POST BY ID
-// ————————————————
-export const getPostById = async (_req, res, next) => {
+// === READ POST BY ID ===
+export const getPostById = async (req, res, next) => {
     try {
-        const id = parseInt(_req.params.id, 10);
+        const id = parseInt(req.params.id, 10);
         if (isNaN(id)) {
             res.status(400).json({ error: "Invalid post ID" });
             return;
@@ -111,11 +113,13 @@ export const getPostById = async (_req, res, next) => {
         next(err);
     }
 };
-// ————————————————
-// UPDATE POST
-// ————————————————
+// === UPDATE POST ===
 export const updatePost = async (req, res, next) => {
     try {
+        if (!req.user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
         const id = parseInt(req.params.id, 10);
         const userId = req.user.id;
         const existing = await prisma.post.findUnique({ where: { id } });
@@ -127,22 +131,36 @@ export const updatePost = async (req, res, next) => {
             res.status(403).json({ error: "Unauthorized" });
             return;
         }
-        let imageUrl = existing.images;
+        let newImageUrl = null;
         if (req.file) {
-            if (existing.images) {
-                const oldPath = path.join(__dirname, "../../", existing.images);
-                fs.unlinkSync(oldPath);
+            // Видаляємо старе зображення, якщо воно існує і є дійсним шляхом
+            if (existing.images !== null && existing.images !== undefined) {
+                try {
+                    // existing.images є JsonValue, тому потрібно перетворити на string
+                    const imagePathInDb = existing.images; // Припускаємо, що це JSON-рядок, який ми зберігали
+                    const oldImagePath = path.join(__dirname, "../../uploads", imagePathInDb);
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                }
+                catch (e) {
+                    logger.error(`Error deleting old image for post ${id}:`, e);
+                }
             }
-            imageUrl = `/uploads/${req.file.filename}`;
+            newImageUrl = `/uploads/postImages/${req.file.filename}`;
+        }
+        else {
+            newImageUrl = existing.images; // Зберігаємо існуюче зображення, якщо нове не завантажено
         }
         const updated = await prisma.post.update({
             where: { id },
             data: {
                 title_en: req.body.title_en,
-                title_uk: req.body.title_uk,
+                title_uk: req.body.title_uk ?? null, // Використовуємо ?? null для необов'язкових полів
                 content_en: req.body.content_en,
-                content_uk: req.body.content_uk,
-                images: imageUrl,
+                content_uk: req.body.content_uk ?? null, // Використовуємо ?? null для необов'язкових полів
+                // Використовуємо тернарний оператор для явного присвоєння Prisma.JsonNull або string
+                images: newImageUrl === null ? Prisma.JsonNull : newImageUrl,
             },
             include: { author: { select: { id: true, email: true, title: true } } },
         });
@@ -152,11 +170,13 @@ export const updatePost = async (req, res, next) => {
         next(err);
     }
 };
-// ————————————————
-// DELETE POST
-// ————————————————
+// === DELETE POST ===
 export const deletePost = async (req, res, next) => {
     try {
+        if (!req.user) {
+            res.status(401).json({ error: "Unauthorized" });
+            return;
+        }
         const id = parseInt(req.params.id, 10);
         const userId = req.user.id;
         const existing = await prisma.post.findUnique({ where: { id } });
@@ -168,9 +188,17 @@ export const deletePost = async (req, res, next) => {
             res.status(403).json({ error: "Unauthorized" });
             return;
         }
-        if (existing.images) {
-            const imgPath = path.join(__dirname, "../../", existing.images);
-            fs.unlinkSync(imgPath);
+        if (existing.images !== null && existing.images !== undefined) {
+            try {
+                const imagePathInDb = existing.images; // Припускаємо, що це JSON-рядок, який ми зберігали
+                const oldImagePath = path.join(__dirname, "../../uploads", imagePathInDb);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            catch (e) {
+                logger.error(`Error deleting old image for post ${id}:`, e);
+            }
         }
         await prisma.post.delete({ where: { id } });
         res.json({ message: "Post deleted successfully" });
@@ -179,11 +207,9 @@ export const deletePost = async (req, res, next) => {
         next(err);
     }
 };
-// ————————————————
-// GET POSTS BY ROLE
-// ————————————————
+// === GET POSTS BY ROLE ===
 export function makeRoleFinder(role) {
-    return async (_req, res, next) => {
+    return async (req, res, next) => {
         try {
             const posts = await prisma.post.findMany({
                 where: { author: { role } },
@@ -193,22 +219,17 @@ export function makeRoleFinder(role) {
             res.json({ posts });
         }
         catch (err) {
-            if (err.code === 'P2021') {
-                return res.json({ posts: [] });
+            if (err.code === "P2021") {
+                res.json({ posts: [] });
+                return;
             }
             logger.error(`Error fetching ${role} posts:`, err);
             next(err);
         }
     };
 }
-export const getCreatorsPosts = makeRoleFinder("CREATOR");
-export const getAuthorsPosts = makeRoleFinder("AUTHOR");
-export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
-export const getMuseumsPost = makeRoleFinder("MUSEUM");
-// ———————————————
-// GET POSTS BY ENTITY ID
-// ———————————————
-export function makeByAuthorId(param) {
+// === GET POSTS BY PARAMETER ===
+export function makeByParamFinder(param, alias) {
     return async (req, res, next) => {
         try {
             const id = parseInt(req.params[param], 10);
@@ -218,19 +239,28 @@ export function makeByAuthorId(param) {
             }
             const posts = await prisma.post.findMany({
                 where: { [param]: id },
-                include: { author: { select: { id: true, email: true, title: true, role: true } } },
+                include: {
+                    author: { select: { id: true, email: true, title: true, role: true } },
+                },
                 orderBy: { createdAt: "desc" },
             });
-            res.json({ posts });
+            res.json({ [alias]: posts });
         }
         catch (err) {
             if (err.code === "P2021") {
-                return res.json({ posts: [] });
+                res.json({ [alias]: [] });
+                return;
             }
             next(err);
         }
     };
 }
-export const getPostsByAuthorId = makeByAuthorId("authorId");
-export const getPostByExhibitionId = makeByAuthorId("exhibitionId");
-export const getPostByMuseumId = makeByAuthorId("museumId");
+// === EXPORT ROUTES ===
+export const getCreatorsPosts = makeRoleFinder("CREATOR");
+export const getAuthorsPosts = makeRoleFinder("AUTHOR");
+export const getExhibitionsPost = makeRoleFinder("EXHIBITION");
+export const getMuseumsPost = makeRoleFinder("MUSEUM");
+export const getPostsByAuthorId = makeByParamFinder("authorId", "postsByAuthor");
+export const getPostByExhibitionId = makeByParamFinder("exhibitionId", "postsByExhibition");
+export const getPostByMuseumId = makeByParamFinder("museumId", "postsByMuseum");
+//# sourceMappingURL=postController.js.map

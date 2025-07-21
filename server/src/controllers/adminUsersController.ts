@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction, Router } from "express";
 import { body, validationResult } from "express-validator";
 import prisma from "../prismaClient.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
-import authorize from "../middleware/roleMIddleware.js"
+import authorize from '../middleware/roleMiddleware.js'
 
 // Валидные столбцы и их дефолтные направления
 const validColumns: Array<[string, "asc" | "desc"]> = [

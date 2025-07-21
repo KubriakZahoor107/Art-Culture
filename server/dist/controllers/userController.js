@@ -1,27 +1,29 @@
-// src/controllers/userController.js
+// /Users/konstantinkubriak/Desktop/Art-Culture/server/src/controllers/userController.ts
 import prisma from "../prismaClient.js";
 import logger from "../utils/logging.js";
-// src/controllers/userController.js
+// Helpers to map dynamic title field based on language
+const getTitleField = (language) => {
+    return language === "uk" ? "title_uk" : "title_en";
+};
+/**
+ * GET /creators/lang/:language?letter=x
+ */
 export const getCreatorsByLanguage = async (req, res, next) => {
     const { language } = req.params;
     const { letter } = req.query;
-    // Log incoming request parameters
     logger.info(`Received request for language: ${language}, letter: ${letter}`);
-    // Validate language
     if (!["uk", "en"].includes(language)) {
         logger.warn(`Invalid language parameter: ${language}`);
         return res.status(400).json({ error: "invalid language" });
     }
-    let titleField = "title";
+    const titleField = getTitleField(language);
     try {
         const creators = await prisma.user.findMany({
             where: {
                 role: "CREATOR",
-                ...(letter && {
-                    [titleField]: {
-                        startsWith: letter,
-                    },
-                }),
+                ...(letter
+                    ? { [titleField]: { startsWith: letter, mode: "insensitive" } }
+                    : {}),
             },
             select: {
                 id: true,
@@ -30,45 +32,42 @@ export const getCreatorsByLanguage = async (req, res, next) => {
                 bio: true,
                 images: true,
             },
-            orderBy: {
-                [titleField]: "asc",
-            },
+            orderBy: { [titleField]: "asc" },
         });
         logger.info(`Fetched ${creators.length} creators from database`);
-        const mappedCreators = creators.map((creator) => ({
-            id: creator.id,
-            email: creator.email,
-            title: creator[titleField],
-            bio: creator.bio,
-            images: creator.images,
+        const mapped = creators.map((c) => ({
+            id: c.id,
+            email: c.email,
+            title: c[titleField],
+            bio: c.bio,
+            images: c.images,
         }));
-        res.json({ creators: mappedCreators });
+        res.json({ creators: mapped });
     }
     catch (error) {
         logger.error("Error fetching creators by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+/**
+ * GET /museums/lang/:language?letter=x
+ */
 export const getMuseumsByLanguage = async (req, res, next) => {
     const { language } = req.params;
     const { letter } = req.query;
-    // Log incoming request parameters
     logger.info(`Received request for language: ${language}, letter: ${letter}`);
-    // Validate language
     if (!["uk", "en"].includes(language)) {
         logger.warn(`Invalid language parameter: ${language}`);
         return res.status(400).json({ error: "invalid language" });
     }
-    let titleField = "title";
+    const titleField = getTitleField(language);
     try {
         const museums = await prisma.user.findMany({
             where: {
                 role: "MUSEUM",
-                ...(letter && {
-                    [titleField]: {
-                        startsWith: letter,
-                    },
-                }),
+                ...(letter
+                    ? { [titleField]: { startsWith: letter, mode: "insensitive" } }
+                    : {}),
             },
             select: {
                 id: true,
@@ -77,31 +76,30 @@ export const getMuseumsByLanguage = async (req, res, next) => {
                 bio: true,
                 images: true,
             },
-            orderBy: {
-                [titleField]: "asc",
-            },
+            orderBy: { [titleField]: "asc" },
         });
-        logger.info(`Fetched ${museums.length} creators from database`);
-        const mappedMuseums = museums.map((museum) => ({
-            id: museum.id,
-            email: museum.email,
-            title: museum[titleField],
-            bio: museum.bio,
-            images: museum.images,
+        logger.info(`Fetched ${museums.length} museums from database`);
+        const mapped = museums.map((m) => ({
+            id: m.id,
+            email: m.email,
+            title: m[titleField],
+            bio: m.bio,
+            images: m.images,
         }));
-        res.json({ museums: mappedMuseums });
+        res.json({ museums: mapped });
     }
     catch (error) {
         logger.error("Error fetching museums by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+/**
+ * GET /creators
+ */
 export const getCreators = async (req, res, next) => {
     try {
         const creators = await prisma.user.findMany({
-            where: {
-                role: "CREATOR",
-            },
+            where: { role: "CREATOR" },
             select: {
                 id: true,
                 email: true,
@@ -119,6 +117,9 @@ export const getCreators = async (req, res, next) => {
         next(error);
     }
 };
+/**
+ * GET /creators/:id
+ */
 export const getCreatorById = async (req, res, next) => {
     try {
         const creatorId = parseInt(req.params.id, 10);
@@ -128,10 +129,9 @@ export const getCreatorById = async (req, res, next) => {
         const creator = await prisma.user.findUnique({
             where: { id: creatorId },
             include: {
-                products: {
-                    include: {
-                        images: true,
-                    },
+                // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+                products_Product_authorIdTouser: {
+                    include: { images: true },
                     orderBy: { createdAt: "desc" },
                 },
             },
@@ -142,30 +142,29 @@ export const getCreatorById = async (req, res, next) => {
         res.json({ creator });
     }
     catch (error) {
-        logger.error("Error fetch data creator id", error);
+        logger.error("Error fetching creator by ID:", error);
         next(error);
     }
 };
+/**
+ * GET /authors/lang/:language?letter=x
+ */
 export const getAuthorsByLanguage = async (req, res, next) => {
     const { language } = req.params;
     const { letter } = req.query;
-    //* Log incoming request parameters
     logger.info(`Received request for language: ${language}, letter: ${letter}`);
-    //* Validate language
     if (!["uk", "en"].includes(language)) {
         logger.warn(`Invalid language parameter: ${language}`);
         return res.status(400).json({ error: "invalid language" });
     }
-    let titleField = "title";
+    const titleField = getTitleField(language);
     try {
         const authors = await prisma.user.findMany({
             where: {
                 role: "AUTHOR",
-                ...(letter && {
-                    [titleField]: {
-                        startsWith: letter,
-                    },
-                }),
+                ...(letter
+                    ? { [titleField]: { startsWith: letter, mode: "insensitive" } }
+                    : {}),
             },
             select: {
                 id: true,
@@ -174,31 +173,30 @@ export const getAuthorsByLanguage = async (req, res, next) => {
                 bio: true,
                 images: true,
             },
-            orderBy: {
-                [titleField]: "asc",
-            },
+            orderBy: { [titleField]: "asc" },
         });
         logger.info(`Fetched ${authors.length} authors from database`);
-        const mappedAuthors = authors.map((author) => ({
-            id: author.id,
-            email: author.email,
-            title: author[titleField],
-            bio: author.bio,
-            images: author.images,
+        const mapped = authors.map((a) => ({
+            id: a.id,
+            email: a.email,
+            title: a[titleField],
+            bio: a.bio,
+            images: a.images,
         }));
-        res.json({ authors: mappedAuthors });
+        res.json({ authors: mapped });
     }
     catch (error) {
-        logger.error("Error fetching creators by language:", error);
+        logger.error("Error fetching authors by language:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+/**
+ * GET /authors
+ */
 export const getAuthors = async (req, res, next) => {
     try {
         const authors = await prisma.user.findMany({
-            where: {
-                role: "AUTHOR",
-            },
+            where: { role: "AUTHOR" },
             select: {
                 id: true,
                 email: true,
@@ -216,6 +214,9 @@ export const getAuthors = async (req, res, next) => {
         next(error);
     }
 };
+/**
+ * GET /authors/:id
+ */
 export const getAuthorById = async (req, res, next) => {
     try {
         const authorId = parseInt(req.params.id, 10);
@@ -225,10 +226,9 @@ export const getAuthorById = async (req, res, next) => {
         const author = await prisma.user.findUnique({
             where: { id: authorId },
             include: {
-                products: {
-                    include: {
-                        images: true,
-                    },
+                // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+                products_Product_authorIdTouser: {
+                    include: { images: true },
                     orderBy: { createdAt: "desc" },
                 },
             },
@@ -239,16 +239,17 @@ export const getAuthorById = async (req, res, next) => {
         res.json({ author });
     }
     catch (error) {
-        logger.error("Error fetch data author id", error);
+        logger.error("Error fetching author by ID:", error);
         next(error);
     }
 };
+/**
+ * GET /museums
+ */
 export const getMuseums = async (req, res, next) => {
     try {
         const museums = await prisma.user.findMany({
-            where: {
-                role: "MUSEUM",
-            },
+            where: { role: "MUSEUM" },
             select: {
                 id: true,
                 email: true,
@@ -262,12 +263,10 @@ export const getMuseums = async (req, res, next) => {
                 country: true,
                 city: true,
                 street: true,
-                house_number: true,
-                postcode: true,
-                museum_logo_image: {
-                    select: {
-                        imageUrl: true,
-                    },
+                houseNumber: true,
+                // Змінено: 'museumLogoImage' на 'museum_logo_images' згідно schema.prisma
+                museum_logo_images: {
+                    select: { imageUrl: true },
                 },
             },
         });
@@ -278,6 +277,9 @@ export const getMuseums = async (req, res, next) => {
         next(error);
     }
 };
+/**
+ * GET /museums/:id
+ */
 export const getMuseumById = async (req, res, next) => {
     try {
         const museumId = parseInt(req.params.id, 10);
@@ -287,11 +289,11 @@ export const getMuseumById = async (req, res, next) => {
         const museum = await prisma.user.findUnique({
             where: { id: museumId },
             include: {
-                museum_logo_image: true,
-                products: {
-                    include: {
-                        images: true,
-                    },
+                // Змінено: 'museumLogoImage' на 'museum_logo_images' згідно schema.prisma
+                museum_logo_images: true,
+                // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_museumIdTouser
+                products_Product_museumIdTouser: {
+                    include: { images: true },
                     orderBy: { createdAt: "desc" },
                 },
             },
@@ -302,16 +304,17 @@ export const getMuseumById = async (req, res, next) => {
         res.json({ museum });
     }
     catch (error) {
-        logger.error("Error fetch data creator id", error);
+        logger.error("Error fetching museum by ID:", error);
         next(error);
     }
 };
+/**
+ * GET /exhibitions
+ */
 export const getExhibitions = async (req, res, next) => {
     try {
-        const exhibition = await prisma.user.findMany({
-            where: {
-                role: "EXHIBITION",
-            },
+        const exhibitions = await prisma.user.findMany({
+            where: { role: "EXHIBITION" },
             select: {
                 id: true,
                 email: true,
@@ -322,13 +325,16 @@ export const getExhibitions = async (req, res, next) => {
                 updatedAt: true,
             },
         });
-        res.json({ exhibition });
+        res.json({ exhibitions });
     }
     catch (error) {
         logger.error("Error fetching exhibitions:", error);
         next(error);
     }
 };
+/**
+ * GET /exhibitions/:id
+ */
 export const getExhibitionById = async (req, res, next) => {
     try {
         const exhibitionId = parseInt(req.params.id, 10);
@@ -338,10 +344,12 @@ export const getExhibitionById = async (req, res, next) => {
         const exhibition = await prisma.user.findUnique({
             where: { id: exhibitionId },
             include: {
-                products: {
-                    include: {
-                        images: true,
-                    },
+                // ВИПРАВЛЕНО: Змінено на правильний регістр products_Product_authorIdTouser
+                // Примітка: Якщо користувач з роллю "EXHIBITION" не є автором продуктів
+                // або не є музеєм, який володіє продуктами, ця відносина може бути нерелевантною.
+                // Перевірте логіку вашого додатку.
+                products_Product_authorIdTouser: {
+                    include: { images: true },
                     orderBy: { createdAt: "desc" },
                 },
             },
@@ -352,7 +360,8 @@ export const getExhibitionById = async (req, res, next) => {
         res.json({ exhibition });
     }
     catch (error) {
-        logger.error("Error fetch data creator id", error);
+        logger.error("Error fetching exhibition by ID:", error);
         next(error);
     }
 };
+//# sourceMappingURL=userController.js.map

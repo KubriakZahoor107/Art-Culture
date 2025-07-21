@@ -5,7 +5,7 @@ import {
   searchMuseum,
   searchPainting,
 } from "../controllers/searchController.js"
-import authenticateToken from "../middleware/authMiddleware.js"
+import { authenticateToken } from "../middleware/authMiddleware.js" // Змінено: імпортуємо authenticateToken як іменований експорт
 
 const router = express.Router()
 

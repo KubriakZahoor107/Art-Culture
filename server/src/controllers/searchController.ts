@@ -110,13 +110,17 @@ export const searchMuseum = async (
         bio: true,
         images: true,
         country: true,
-        houseNumber: true,   // <-- corrected
+        houseNumber: true,
         lat: true,
         lon: true,
         postcode: true,
         state: true,
         street: true,
         city: true,
+        // Додано: museum_logo_images для пошуку музеїв, якщо це потрібно на фронтенді
+        museum_logo_images: {
+          select: { imageUrl: true },
+        },
       },
       take: 10,
     })
@@ -153,6 +157,10 @@ export const searchAll = async (
         bio: true,
         images: true,
         role: true,
+        // Додано: museum_logo_images, якщо потрібно для музеїв у загальному пошуку
+        museum_logo_images: {
+          select: { imageUrl: true },
+        },
       },
       take: 10,
     })
@@ -202,12 +210,14 @@ export const searchAll = async (
     const searchAllExhibitions = prisma.exhibition.findMany({
       include: {
         images: true,
-        museum: {
+        // Виправлено: 'museum' на 'user_Exhibition_museumIdTouser' згідно schema.prisma
+        user_Exhibition_museumIdTouser: {
           include: {
-            museumLogoImage: true,   // исправлено название поля
+            museum_logo_images: true,
           },
         },
-        createdBy: {
+        // Виправлено: 'createdBy' на 'user_Exhibition_createdByIdTouser' згідно schema.prisma
+        user_Exhibition_createdByIdTouser: {
           select: {
             id: true,
             email: true,
@@ -238,4 +248,3 @@ export const searchAll = async (
     next(error)
   }
 }
-
